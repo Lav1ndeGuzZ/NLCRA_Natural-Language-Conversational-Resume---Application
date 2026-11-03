@@ -1,0 +1,543 @@
+{
+  "sha": "858a62bd839d490e8745b7503961e4676a54b9d7",
+  "url": "https://api.github.com/repos/liepin-tech-2026/liepin-cil/git/trees/858a62bd839d490e8745b7503961e4676a54b9d7",
+  "tree": [
+    {
+      "path": "README.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "2f164dc86b2dc97674d703cf2d4e6ddd2aa07181",
+      "size": 21750,
+      "url": "https://api.github.com/repos/liepin-tech-2026/liepin-cil/git/blobs/2f164dc86b2dc97674d703cf2d4e6ddd2aa07181"
+    },
+    {
+      "path": "liepin_cli",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "a647b6dae73a60d403c15585d0a94210e426449a",
+      "url": "https://api.github.com/repos/liepin-tech-2026/liepin-cil/git/trees/a647b6dae73a60d403c15585d0a94210e426449a"
+    },
+    {
+      "path": "liepin_cli/__init__.py",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "a05eb9abb93a3c0a4e3f1ef478fe80d1793cee90",
+      "size": 49,
+      "url": "https://api.github.com/repos/liepin-tech-2026/liepin-cil/git/blobs/a05eb9abb93a3c0a4e3f1ef478fe80d1793cee90"
+    },
+    {
+      "path": "liepin_cli/cli",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "24dc9bc65642486dc08002cf86fd0fd263db1034",
+      "url": "https://api.github.com/repos/liepin-tech-2026/liepin-cil/git/trees/24dc9bc65642486dc08002cf86fd0fd263db1034"
+    },
+    {
+      "path": "liepin_cli/cli/__init__.py",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391",
+      "size": 0,
+      "url": "https://api.github.com/repos/liepin-tech-2026/liepin-cil/git/blobs/e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"
+    },
+    {
+      "path": "liepin_cli/cli/app.py",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "44385b8166a129dd0f38983debcf667d99b10561",
+      "size": 816,
+      "url": "https://api.github.com/repos/liepin-tech-2026/liepin-cil/git/blobs/44385b8166a129dd0f38983debcf667d99b10561"
+    },
+    {
+      "path": "liepin_cli/cli/auth.py",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "aa1fd8e7aef9728ce0f8ac7fc554f283d05260fe",
+      "size": 2722,
+      "url": "https://api.github.com/repos/liepin-tech-2026/liepin-cil/git/blobs/aa1fd8e7aef9728ce0f8ac7fc554f283d05260fe"
+    },
+    {
+      "path": "liepin_cli/cli/common.py",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "0588444b95890a3e440446a7c4de3b945feb3979",
+      "size": 3704,
+      "url": "https://api.github.com/repos/liepin-tech-2026/liepin-cil/git/blobs/0588444b95890a3e440446a7c4de3b945feb3979"
+    },
+    {
+      "path": "liepin_cli/cli/help_localization.py",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "4387adfbf34c284c77c3ece52e667c87f8d8f11c",
+      "size": 3330,
+      "url": "https://api.github.com/repos/liepin-tech-2026/liepin-cil/git/blobs/4387adfbf34c284c77c3ece52e667c87f8d8f11c"
+    },
+    {
+      "path": "liepin_cli/cli/job.py",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "77a6a7a1bdb915c5942b0fac06c639ede56fa85d",
+      "size": 3851,
+      "url": "https://api.github.com/repos/liepin-tech-2026/liepin-cil/git/blobs/77a6a7a1bdb915c5942b0fac06c639ede56fa85d"
+    },
+    {
+      "path": "liepin_cli/cli/resume.py",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "734dd2b48b411c8b133d109fbf431c4a8c965989",
+      "size": 23901,
+      "url": "https://api.github.com/repos/liepin-tech-2026/liepin-cil/git/blobs/734dd2b48b411c8b133d109fbf431c4a8c965989"
+    },
+    {
+      "path": "liepin_cli/cli/setup.py",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "66321e2de55b83fba45df2d18cd7c8d79259f38d",
+      "size": 125,
+      "url": "https://api.github.com/repos/liepin-tech-2026/liepin-cil/git/blobs/66321e2de55b83fba45df2d18cd7c8d79259f38d"
+    },
+    {
+      "path": "liepin_cli/cli/skill.py",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "88e68db0c6193ee5798b501fea23cdb60fbf9191",
+      "size": 1580,
+      "url": "https://api.github.com/repos/liepin-tech-2026/liepin-cil/git/blobs/88e68db0c6193ee5798b501fea23cdb60fbf9191"
+    },
+    {
+      "path": "liepin_cli/core",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "35cd8b11f2f48c397ebd9d3224bc31c2ddc4880e",
+      "url": "https://api.github.com/repos/liepin-tech-2026/liepin-cil/git/trees/35cd8b11f2f48c397ebd9d3224bc31c2ddc4880e"
+    },
+    {
+      "path": "liepin_cli/core/__init__.py",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "3c021ae8ed8a8e9e1a48ca2b4e49c20add51d63b",
+      "size": 338,
+      "url": "https://api.github.com/repos/liepin-tech-2026/liepin-cil/git/blobs/3c021ae8ed8a8e9e1a48ca2b4e49c20add51d63b"
+    },
+    {
+      "path": "liepin_cli/core/auth_store.py",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "692c592e55c66592005b5bf4b6655ccacecadecf",
+      "size": 1866,
+      "url": "https://api.github.com/repos/liepin-tech-2026/liepin-cil/git/blobs/692c592e55c66592005b5bf4b6655ccacecadecf"
+    },
+    {
+      "path": "liepin_cli/core/browser.py",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "532da48c35181edb415e9881ea96870be9d529e0",
+      "size": 558,
+      "url": "https://api.github.com/repos/liepin-tech-2026/liepin-cil/git/blobs/532da48c35181edb415e9881ea96870be9d529e0"
+    },
+    {
+      "path": "liepin_cli/core/client.py",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "429c2566eae4544e79d3a6d8a5fb84b9a66a44ac",
+      "size": 2240,
+      "url": "https://api.github.com/repos/liepin-tech-2026/liepin-cil/git/blobs/429c2566eae4544e79d3a6d8a5fb84b9a66a44ac"
+    },
+    {
+      "path": "liepin_cli/core/config.py",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "0916f4e69074e711837b1abbeb2e974f1ac4f256",
+      "size": 1832,
+      "url": "https://api.github.com/repos/liepin-tech-2026/liepin-cil/git/blobs/0916f4e69074e711837b1abbeb2e974f1ac4f256"
+    },
+    {
+      "path": "liepin_cli/core/errors.py",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "2912231861c2fdd08ccde8151b5e2135365d077c",
+      "size": 577,
+      "url": "https://api.github.com/repos/liepin-tech-2026/liepin-cil/git/blobs/2912231861c2fdd08ccde8151b5e2135365d077c"
+    },
+    {
+      "path": "liepin_cli/core/interaction.py",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "be7e585d2349724327f84949bcfbca709d0ed4d0",
+      "size": 431,
+      "url": "https://api.github.com/repos/liepin-tech-2026/liepin-cil/git/blobs/be7e585d2349724327f84949bcfbca709d0ed4d0"
+    },
+    {
+      "path": "liepin_cli/core/onboarding.py",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "4cd5cb399f84302f6011bb372294cb4db7f5bf91",
+      "size": 1021,
+      "url": "https://api.github.com/repos/liepin-tech-2026/liepin-cil/git/blobs/4cd5cb399f84302f6011bb372294cb4db7f5bf91"
+    },
+    {
+      "path": "liepin_cli/core/output.py",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "8f98a425924aedd35bad0a1b33248ff6529dd94f",
+      "size": 669,
+      "url": "https://api.github.com/repos/liepin-tech-2026/liepin-cil/git/blobs/8f98a425924aedd35bad0a1b33248ff6529dd94f"
+    },
+    {
+      "path": "liepin_cli/core/payloads.py",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "e6043633c11c2135f9dd3d35db74e3d828f9f4e8",
+      "size": 1334,
+      "url": "https://api.github.com/repos/liepin-tech-2026/liepin-cil/git/blobs/e6043633c11c2135f9dd3d35db74e3d828f9f4e8"
+    },
+    {
+      "path": "liepin_cli/main.py",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "2c3d2fb32da23f0dbfd64ff084ec4b919c3b3afe",
+      "size": 107,
+      "url": "https://api.github.com/repos/liepin-tech-2026/liepin-cil/git/blobs/2c3d2fb32da23f0dbfd64ff084ec4b919c3b3afe"
+    },
+    {
+      "path": "liepin_cli/models",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "ac0efa36db5a14de2b9a24828693d34e43903edf",
+      "url": "https://api.github.com/repos/liepin-tech-2026/liepin-cil/git/trees/ac0efa36db5a14de2b9a24828693d34e43903edf"
+    },
+    {
+      "path": "liepin_cli/models/__init__.py",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "f468cb8933426aa2d3cf1d781b4130d81e6d9ded",
+      "size": 655,
+      "url": "https://api.github.com/repos/liepin-tech-2026/liepin-cil/git/blobs/f468cb8933426aa2d3cf1d781b4130d81e6d9ded"
+    },
+    {
+      "path": "liepin_cli/models/base.py",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "1a73c18d2a7f1335a590af78f0d99a7e73e628ce",
+      "size": 587,
+      "url": "https://api.github.com/repos/liepin-tech-2026/liepin-cil/git/blobs/1a73c18d2a7f1335a590af78f0d99a7e73e628ce"
+    },
+    {
+      "path": "liepin_cli/models/job.py",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "5ba2819c1881da77b0bd39e3bb1e03fc0807b9a1",
+      "size": 588,
+      "url": "https://api.github.com/repos/liepin-tech-2026/liepin-cil/git/blobs/5ba2819c1881da77b0bd39e3bb1e03fc0807b9a1"
+    },
+    {
+      "path": "liepin_cli/models/registry.py",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "e3d44b4c4f4996f9c328abcbc313f3bc784bf65a",
+      "size": 1027,
+      "url": "https://api.github.com/repos/liepin-tech-2026/liepin-cil/git/blobs/e3d44b4c4f4996f9c328abcbc313f3bc784bf65a"
+    },
+    {
+      "path": "liepin_cli/models/resume.py",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "1ef8b46fd797d2a00560c5d489ef309c9454fb20",
+      "size": 4061,
+      "url": "https://api.github.com/repos/liepin-tech-2026/liepin-cil/git/blobs/1ef8b46fd797d2a00560c5d489ef309c9454fb20"
+    },
+    {
+      "path": "liepin_cli/readme_examples.py",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "394cf08a91771d2d389e089ddc7f6167bca8cb30",
+      "size": 1792,
+      "url": "https://api.github.com/repos/liepin-tech-2026/liepin-cil/git/blobs/394cf08a91771d2d389e089ddc7f6167bca8cb30"
+    },
+    {
+      "path": "liepin_cli/skill_distribution.py",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "0ed8790597635fb58ad16907b29cb598f7d3fba8",
+      "size": 20227,
+      "url": "https://api.github.com/repos/liepin-tech-2026/liepin-cil/git/blobs/0ed8790597635fb58ad16907b29cb598f7d3fba8"
+    },
+    {
+      "path": "pyproject.toml",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "ada6e8bf6e2877e100da2da6ae942340fb102b75",
+      "size": 575,
+      "url": "https://api.github.com/repos/liepin-tech-2026/liepin-cil/git/blobs/ada6e8bf6e2877e100da2da6ae942340fb102b75"
+    },
+    {
+      "path": "schemas",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "2b1eb04a0a8e85360708c8d7451d7c9ecfb8afa7",
+      "url": "https://api.github.com/repos/liepin-tech-2026/liepin-cil/git/trees/2b1eb04a0a8e85360708c8d7451d7c9ecfb8afa7"
+    },
+    {
+      "path": "schemas/add-edu-exp-input.json",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "1318cff9df5e1808718e2b25c0bbae29f58b0799",
+      "size": 1012,
+      "url": "https://api.github.com/repos/liepin-tech-2026/liepin-cil/git/blobs/1318cff9df5e1808718e2b25c0bbae29f58b0799"
+    },
+    {
+      "path": "schemas/add-job-want-input.json",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "41ed9451732d6f1755386542f03486e92d87451f",
+      "size": 1279,
+      "url": "https://api.github.com/repos/liepin-tech-2026/liepin-cil/git/blobs/41ed9451732d6f1755386542f03486e92d87451f"
+    },
+    {
+      "path": "schemas/add-project-exp-input.json",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "d68fd3576453e4c8f0cbd3dbe35d9933b1782de8",
+      "size": 901,
+      "url": "https://api.github.com/repos/liepin-tech-2026/liepin-cil/git/blobs/d68fd3576453e4c8f0cbd3dbe35d9933b1782de8"
+    },
+    {
+      "path": "schemas/add-work-exp-input.json",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "9252b0d4ae3d6c1f31ff24f2a1f9a57f5ae11e54",
+      "size": 1911,
+      "url": "https://api.github.com/repos/liepin-tech-2026/liepin-cil/git/blobs/9252b0d4ae3d6c1f31ff24f2a1f9a57f5ae11e54"
+    },
+    {
+      "path": "schemas/apply-job-input.json",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "f8cb797709018eada6ae87b4be2e0f064195290e",
+      "size": 415,
+      "url": "https://api.github.com/repos/liepin-tech-2026/liepin-cil/git/blobs/f8cb797709018eada6ae87b4be2e0f064195290e"
+    },
+    {
+      "path": "schemas/search-job-input.json",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "3a97f26ed8986779237e4fe27004dfa8681b80c4",
+      "size": 1412,
+      "url": "https://api.github.com/repos/liepin-tech-2026/liepin-cil/git/blobs/3a97f26ed8986779237e4fe27004dfa8681b80c4"
+    },
+    {
+      "path": "schemas/update-base-info-input.json",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "58772382d8bc73668482900fb6011c44c4b95dee",
+      "size": 2370,
+      "url": "https://api.github.com/repos/liepin-tech-2026/liepin-cil/git/blobs/58772382d8bc73668482900fb6011c44c4b95dee"
+    },
+    {
+      "path": "schemas/update-edu-exp-input.json",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "d02f122597ebf8e24f5e2a18409c39ae2b82f95a",
+      "size": 1076,
+      "url": "https://api.github.com/repos/liepin-tech-2026/liepin-cil/git/blobs/d02f122597ebf8e24f5e2a18409c39ae2b82f95a"
+    },
+    {
+      "path": "schemas/update-job-want-input.json",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "3bd0792d928592cd089d5d8c92d0843016303fc9",
+      "size": 1373,
+      "url": "https://api.github.com/repos/liepin-tech-2026/liepin-cil/git/blobs/3bd0792d928592cd089d5d8c92d0843016303fc9"
+    },
+    {
+      "path": "schemas/update-project-exp-input.json",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "3f5168e561272734ec38742128346ac4ad11fe0a",
+      "size": 989,
+      "url": "https://api.github.com/repos/liepin-tech-2026/liepin-cil/git/blobs/3f5168e561272734ec38742128346ac4ad11fe0a"
+    },
+    {
+      "path": "schemas/update-self-assess-input.json",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "fc6c85de116db1efc2d8e178c17ddec96de575c6",
+      "size": 282,
+      "url": "https://api.github.com/repos/liepin-tech-2026/liepin-cil/git/blobs/fc6c85de116db1efc2d8e178c17ddec96de575c6"
+    },
+    {
+      "path": "schemas/update-work-exp-input.json",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "d425085a9a7302df08d67407f4fd44315988ef99",
+      "size": 1984,
+      "url": "https://api.github.com/repos/liepin-tech-2026/liepin-cil/git/blobs/d425085a9a7302df08d67407f4fd44315988ef99"
+    },
+    {
+      "path": "skills",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "78bcd62647eb757d707211f221a342a0f86abe27",
+      "url": "https://api.github.com/repos/liepin-tech-2026/liepin-cil/git/trees/78bcd62647eb757d707211f221a342a0f86abe27"
+    },
+    {
+      "path": "skills/liepin-cli",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "75f2401901d35fca20093d549d7e407fb328c0fa",
+      "url": "https://api.github.com/repos/liepin-tech-2026/liepin-cil/git/trees/75f2401901d35fca20093d549d7e407fb328c0fa"
+    },
+    {
+      "path": "skills/liepin-cli/README.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "9d539d1197337b4257398a40736f2cd55bb0c080",
+      "size": 2455,
+      "url": "https://api.github.com/repos/liepin-tech-2026/liepin-cil/git/blobs/9d539d1197337b4257398a40736f2cd55bb0c080"
+    },
+    {
+      "path": "skills/liepin-cli/SKILL.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "b02ed35113b1b722103e6a727fdbd632b5ed251e",
+      "size": 2642,
+      "url": "https://api.github.com/repos/liepin-tech-2026/liepin-cil/git/blobs/b02ed35113b1b722103e6a727fdbd632b5ed251e"
+    },
+    {
+      "path": "skills/liepin-cli/install-targets.json",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "25f9cd491a24c6bb03c3b41ef03d43d55b159d88",
+      "size": 1795,
+      "url": "https://api.github.com/repos/liepin-tech-2026/liepin-cil/git/blobs/25f9cd491a24c6bb03c3b41ef03d43d55b159d88"
+    },
+    {
+      "path": "skills/liepin-cli/reference.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "3108226a00c06c870f30dd51e727f4460b6150e3",
+      "size": 5118,
+      "url": "https://api.github.com/repos/liepin-tech-2026/liepin-cil/git/blobs/3108226a00c06c870f30dd51e727f4460b6150e3"
+    },
+    {
+      "path": "stress-report.json",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "a8e298f740feaad49aa3e6f9d4e0f99798e2879e",
+      "size": 565,
+      "url": "https://api.github.com/repos/liepin-tech-2026/liepin-cil/git/blobs/a8e298f740feaad49aa3e6f9d4e0f99798e2879e"
+    },
+    {
+      "path": "tests",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "4f3688b4cfd7debf2b4986de9edaae933fbd2500",
+      "url": "https://api.github.com/repos/liepin-tech-2026/liepin-cil/git/trees/4f3688b4cfd7debf2b4986de9edaae933fbd2500"
+    },
+    {
+      "path": "tests/test_auth_store.py",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "7628e2e38a9233efc7376505e9c2fb08fe75b711",
+      "size": 5535,
+      "url": "https://api.github.com/repos/liepin-tech-2026/liepin-cil/git/blobs/7628e2e38a9233efc7376505e9c2fb08fe75b711"
+    },
+    {
+      "path": "tests/test_cli_auth.py",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "db7c5b51fd4817420fc46e5a59158694effeea9d",
+      "size": 7096,
+      "url": "https://api.github.com/repos/liepin-tech-2026/liepin-cil/git/blobs/db7c5b51fd4817420fc46e5a59158694effeea9d"
+    },
+    {
+      "path": "tests/test_cli_job.py",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "d54f7ae494b9b64d744359c4c4c01f482bf9124b",
+      "size": 4802,
+      "url": "https://api.github.com/repos/liepin-tech-2026/liepin-cil/git/blobs/d54f7ae494b9b64d744359c4c4c01f482bf9124b"
+    },
+    {
+      "path": "tests/test_cli_resume.py",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "1bfcc04df34e24c85bba6ddc6520dbe292bdbb7e",
+      "size": 13466,
+      "url": "https://api.github.com/repos/liepin-tech-2026/liepin-cil/git/blobs/1bfcc04df34e24c85bba6ddc6520dbe292bdbb7e"
+    },
+    {
+      "path": "tests/test_cli_skill.py",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "c94050afecbcd7c3aad7a9d3341c513049f2a7df",
+      "size": 808,
+      "url": "https://api.github.com/repos/liepin-tech-2026/liepin-cil/git/blobs/c94050afecbcd7c3aad7a9d3341c513049f2a7df"
+    },
+    {
+      "path": "tests/test_cli_smoke.py",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "736467d2e43f5c483297175a9536084064a3463f",
+      "size": 1415,
+      "url": "https://api.github.com/repos/liepin-tech-2026/liepin-cil/git/blobs/736467d2e43f5c483297175a9536084064a3463f"
+    },
+    {
+      "path": "tests/test_client.py",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "8e5f26ad5c5377f58a9769de36e3f5a0ef9d2435",
+      "size": 7010,
+      "url": "https://api.github.com/repos/liepin-tech-2026/liepin-cil/git/blobs/8e5f26ad5c5377f58a9769de36e3f5a0ef9d2435"
+    },
+    {
+      "path": "tests/test_onboarding.py",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "65de6226a46074bda7253a307938a42f405f7033",
+      "size": 6050,
+      "url": "https://api.github.com/repos/liepin-tech-2026/liepin-cil/git/blobs/65de6226a46074bda7253a307938a42f405f7033"
+    },
+    {
+      "path": "tests/test_payloads.py",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "581150882f49a51870bfd05fc485df98bcd42e4a",
+      "size": 9016,
+      "url": "https://api.github.com/repos/liepin-tech-2026/liepin-cil/git/blobs/581150882f49a51870bfd05fc485df98bcd42e4a"
+    },
+    {
+      "path": "tests/test_readme_examples.py",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "94040a5c0af3d2c6314ce8b722c8a4fc1c6ea009",
+      "size": 11162,
+      "url": "https://api.github.com/repos/liepin-tech-2026/liepin-cil/git/blobs/94040a5c0af3d2c6314ce8b722c8a4fc1c6ea009"
+    },
+    {
+      "path": "tests/test_schema_contract.py",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "a3665b1feb1271d244a32bcfd2410ed8469ef261",
+      "size": 2443,
+      "url": "https://api.github.com/repos/liepin-tech-2026/liepin-cil/git/blobs/a3665b1feb1271d244a32bcfd2410ed8469ef261"
+    },
+    {
+      "path": "tests/test_skill_distribution.py",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "00152163568a308191629a1f73e4b9d4eec38a71",
+      "size": 6358,
+      "url": "https://api.github.com/repos/liepin-tech-2026/liepin-cil/git/blobs/00152163568a308191629a1f73e4b9d4eec38a71"
+    },
+    {
+      "path": "uv.lock",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "66af10f9040c879b03524c2d4fe449fc6f9c00ba",
+      "size": 72627,
+      "url": "https://api.github.com/repos/liepin-tech-2026/liepin-cil/git/blobs/66af10f9040c879b03524c2d4fe449fc6f9c00ba"
+    }
+  ],
+  "truncated": false
+}

@@ -1,0 +1,29 @@
+# dependencies / builds
+node_modules/
+frontend/node_modules/
+frontend/dist/
+.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+*.tsbuildinfo
+
+# pip temp dirs (Windows sandbox quirk)
+pip-build-tracker-*/
+pip-ephem-wheel-cache-*/
+pip-install-*/
+pip-unpack-*/
+pip-metadata-*/
+
+# secrets
+.env
+backend/.env
+*.local
+
+# logs / OS
+*.log
+.DS_Store
+Thumbs.db
+
+# deployment
+data/
