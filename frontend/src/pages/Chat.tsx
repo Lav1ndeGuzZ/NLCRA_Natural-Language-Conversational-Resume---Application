@@ -1,8 +1,14 @@
 import { useEffect, useRef, useState } from "react";
-import { MessageOutlined, SendOutlined, ThunderboltOutlined } from "@ant-design/icons";
+import {
+  FileTextOutlined,
+  MessageOutlined,
+  SendOutlined,
+  ThunderboltOutlined,
+} from "@ant-design/icons";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { App as AntApp, Button, Input, Space, Tag, Typography } from "antd";
-import { chat as sendChat, getHealth } from "../api/client";
+import { useNavigate } from "react-router-dom";
+import { chatStream, extractResume, getHealth, getHistory, saveHistory } from "../api/client";
 import { useSessionStore } from "../store/session";
 import type { ChatMessage } from "../types";
 
@@ -12,48 +18,107 @@ const INITIAL_MESSAGE: ChatMessage = {
     "你好，我是职途助手。先告诉我：你最近一段工作/实习是什么？你负责什么、做出了什么结果？我会帮你把它整理成简历里能用的表达。",
 };
 
-const PROMPTS = [
-  "帮我梳理最近一段工作经历",
-  "这段经历怎么写得更像成果？",
-  "我想投产品经理，简历该怎么改？",
-  "我适合什么方向的岗位？",
-];
-
 export default function Chat() {
   const { message } = AntApp.useApp();
+  const navigate = useNavigate();
   const token = useSessionStore((state) => state.token);
+  const setResumeDraft = useSessionStore((state) => state.setResumeDraft);
   const [messages, setMessages] = useState<ChatMessage[]>([INITIAL_MESSAGE]);
   const [input, setInput] = useState("");
   const [lastDemo, setLastDemo] = useState(false);
+  const [streaming, setStreaming] = useState(false);
   const logRef = useRef<HTMLDivElement>(null);
+  const hydratedRef = useRef(false);
+  const abortRef = useRef<AbortController | null>(null);
   const { data: health } = useQuery({ queryKey: ["health"], queryFn: getHealth });
-
-  const mutation = useMutation({
-    mutationFn: (nextMessages: ChatMessage[]) => sendChat(nextMessages),
-    onSuccess: (result) => {
-      setMessages((current) => [
-        ...current,
-        { role: "assistant", content: result.content },
-      ]);
-      setLastDemo(result.demo);
-    },
-    onError: (error: Error) => {
-      message.error(error.message || "助手回复失败");
-    },
+  const { data: savedHistory } = useQuery({
+    queryKey: ["chat-history"],
+    queryFn: getHistory,
+    staleTime: Infinity,
   });
 
   useEffect(() => {
-    logRef.current?.scrollTo({ top: logRef.current.scrollHeight, behavior: "smooth" });
-  }, [messages, mutation.isPending]);
+    if (hydratedRef.current) return;
+    const saved = savedHistory?.data;
+    if (saved && saved.length > 0) {
+      setMessages(saved);
+      hydratedRef.current = true;
+    } else if (savedHistory) {
+      hydratedRef.current = true;
+    }
+  }, [savedHistory]);
 
-  const submit = (value?: string) => {
+  useEffect(() => {
+    if (!hydratedRef.current || messages.length < 2) return;
+    const timer = setTimeout(() => {
+      saveHistory(messages).catch(() => undefined);
+    }, 400);
+    return () => clearTimeout(timer);
+  }, [messages]);
+
+  // 离开页面时中断未完成的流，避免后端继续消耗额度。
+  useEffect(() => () => abortRef.current?.abort(), []);
+
+  const submit = async (value?: string) => {
     const content = (value ?? input).trim();
-    if (!content || mutation.isPending) return;
+    if (!content || streaming) return;
     const nextMessages: ChatMessage[] = [...messages, { role: "user", content }];
-    setMessages(nextMessages);
     setInput("");
-    mutation.mutate(nextMessages);
+    setMessages([...nextMessages, { role: "assistant", content: "" }]);
+    setStreaming(true);
+
+    const controller = new AbortController();
+    abortRef.current = controller;
+    let acc = "";
+    try {
+      await chatStream(nextMessages, {
+        signal: controller.signal,
+        onDelta: (delta) => {
+          acc += delta;
+          setMessages((current) => {
+            const copy = [...current];
+            const lastIndex = copy.length - 1;
+            if (copy[lastIndex]?.role === "assistant") {
+              copy[lastIndex] = { role: "assistant", content: acc };
+            }
+            return copy;
+          });
+        },
+        onDone: (info) => setLastDemo(info.demo),
+      });
+    } catch (error) {
+      if ((error as Error)?.name !== "AbortError") {
+        message.error((error as Error)?.message || "助手回复失败");
+      }
+      setMessages((current) => {
+        const copy = [...current];
+        const lastIndex = copy.length - 1;
+        if (copy[lastIndex]?.role === "assistant" && !copy[lastIndex].content) copy.pop();
+        return copy;
+      });
+    } finally {
+      setStreaming(false);
+      abortRef.current = null;
+    }
   };
+
+  useEffect(() => {
+    logRef.current?.scrollTo({ top: logRef.current.scrollHeight, behavior: "smooth" });
+  }, [messages, streaming]);
+
+  const extractMutation = useMutation({
+    mutationFn: () => extractResume(messages),
+    onSuccess: (result) => {
+      setResumeDraft(result.resume, result.missing);
+      message.success(
+        result.missing.length > 0
+          ? `已整理成简历，还缺 ${result.missing.length} 项信息`
+          : "已整理成简历",
+      );
+      navigate("/resume");
+    },
+    onError: (error: Error) => message.error(error.message || "整理简历失败"),
+  });
 
   return (
     <div className="page">
@@ -73,19 +138,27 @@ export default function Chat() {
       <div className="chat-layout">
         <div className="chat-panel">
           <div className="chat-log" ref={logRef}>
-            {messages.map((item, index) => (
-              <div
-                key={`${item.role}-${index}`}
-                className={`chat-bubble ${item.role === "user" ? "user" : "assistant"}`}
-              >
-                {item.content}
-              </div>
-            ))}
-            {mutation.isPending && (
-              <div className="chat-bubble assistant">
-                <ThunderboltOutlined /> 正在思考…
-              </div>
-            )}
+            {messages.map((item, index) => {
+              const isLastAssistant =
+                streaming && index === messages.length - 1 && item.role === "assistant";
+              return (
+                <div
+                  key={`${item.role}-${index}`}
+                  className={`chat-bubble ${item.role === "user" ? "user" : "assistant"}`}
+                >
+                  {isLastAssistant && !item.content ? (
+                    <span className="thinking">
+                      <ThunderboltOutlined /> 正在思考…
+                    </span>
+                  ) : (
+                    <>
+                      {item.content}
+                      {isLastAssistant && <span className="stream-cursor" />}
+                    </>
+                  )}
+                </div>
+              );
+            })}
           </div>
 
           <div className="chat-composer">
@@ -104,32 +177,31 @@ export default function Chat() {
             <Button
               type="primary"
               icon={<SendOutlined />}
-              loading={mutation.isPending}
+              loading={streaming}
               onClick={() => submit()}
             >
               发送
+            </Button>
+            {streaming && (
+              <Button
+                danger
+                onClick={() => abortRef.current?.abort()}
+              >
+                停止
+              </Button>
+            )}
+            <Button
+              icon={<FileTextOutlined />}
+              loading={extractMutation.isPending}
+              disabled={messages.length < 2}
+              onClick={() => extractMutation.mutate()}
+            >
+              整理成简历
             </Button>
           </div>
         </div>
 
         <aside className="chat-side">
-          <div className="panel">
-            <h3 style={{ fontSize: 14 }}>快捷提问</h3>
-            <p className="panel-sub">点击填入输入框，或直接发送。</p>
-            <Space direction="vertical" size={8} style={{ width: "100%" }}>
-              {PROMPTS.map((prompt) => (
-                <button
-                  key={prompt}
-                  type="button"
-                  className="chat-prompt"
-                  onClick={() => submit(prompt)}
-                >
-                  {prompt}
-                </button>
-              ))}
-            </Space>
-          </div>
-
           <div className="panel">
             <h3 style={{ fontSize: 14 }}>
               <MessageOutlined /> 当前上下文
@@ -137,7 +209,7 @@ export default function Chat() {
             <div style={{ fontSize: 12, color: "#64748b", lineHeight: 1.8 }}>
               <div>猎聘 token：{token ? "已连接（仅当前标签页）" : "未连接"}</div>
               <div>模型：{health?.deepseek_configured ? "DeepSeek" : "演示回复"}</div>
-              <div>数据：浏览器本地，不上传服务端数据库</div>
+              <div>数据：对话与简历保存在本地 SQLite</div>
             </div>
             {lastDemo && (
               <Typography.Paragraph type="warning" style={{ fontSize: 11, marginTop: 10 }}>

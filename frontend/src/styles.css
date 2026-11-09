@@ -580,6 +580,27 @@ a {
   border-bottom-right-radius: 4px;
 }
 
+.chat-bubble .thinking {
+  color: #64748b;
+}
+
+.stream-cursor {
+  display: inline-block;
+  width: 7px;
+  height: 15px;
+  margin-left: 2px;
+  vertical-align: -2px;
+  background: #2563eb;
+  border-radius: 1px;
+  animation: stream-blink 0.9s steps(2, start) infinite;
+}
+
+@keyframes stream-blink {
+  to {
+    visibility: hidden;
+  }
+}
+
 .chat-composer {
   border-top: 1px solid #e6ebf3;
   padding: 12px;

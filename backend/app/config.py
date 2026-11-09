@@ -1,12 +1,20 @@
 from functools import lru_cache
+from pathlib import Path
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+BASE_DIR = Path(__file__).resolve().parent.parent
+
+DEFAULT_DB_PATH = str(BASE_DIR / "data" / "nlcra.db")
 
 
 class Settings(BaseSettings):
     app_name: str = "NLCRA"
     environment: str = "development"
     version: str = "0.1.0"
+
+    # Single-user SQLite store.
+    database_path: str = DEFAULT_DB_PATH
 
     # Shared access gate for deployments. Empty means disabled (local dev).
     app_access_code: str = ""

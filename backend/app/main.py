@@ -1,15 +1,26 @@
+from contextlib import asynccontextmanager
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.api import demo, health, liepin, llm, resume
+from app.api import applications, demo, health, liepin, llm, match, resume
 from app.config import get_settings
+from app.db import init_db
 
 settings = get_settings()
+
+
+@asynccontextmanager
+async def lifespan(_: FastAPI):
+    init_db()
+    yield
+
 
 app = FastAPI(
     title="NLCRA 求职工作台 API",
     version=settings.version,
     description="无登录、单用户、只接入猎聘的求职工具后端。",
+    lifespan=lifespan,
 )
 
 app.add_middleware(
@@ -24,6 +35,8 @@ app.include_router(health.router)
 app.include_router(demo.router)
 app.include_router(liepin.router)
 app.include_router(llm.router)
+app.include_router(match.router)
+app.include_router(applications.router)
 app.include_router(resume.router)
 
 

@@ -49,3 +49,41 @@ export type ApiEnvelope<T> = {
 };
 
 export type ResumeData = Record<string, unknown>;
+
+export type ExtractResult = {
+  resume: ResumeData;
+  missing: string[];
+  model: string;
+  demo: boolean;
+};
+
+export type JobMatch = {
+  index: number;
+  score: number;
+  matched: string[];
+  missing: string[];
+  suggestion: string;
+};
+
+export type MatchResponse = {
+  results: JobMatch[];
+  model: string;
+  demo: boolean;
+};
+
+export type ApplicationStatus = "submitted" | "viewed" | "interview" | "offer" | "rejected";
+
+export type Application = {
+  id: number;
+  job_id: number;
+  job_kind: string;
+  title: string;
+  company: string;
+  city: string;
+  salary: string;
+  status: ApplicationStatus;
+  note: string;
+  created_at: string;
+};
+
+export type ApplicationCounts = Record<string, number>;

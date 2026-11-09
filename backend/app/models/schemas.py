@@ -42,6 +42,25 @@ class ResumeExportRequest(BaseModel):
     filename: str = "resume"
 
 
+class ExtractRequest(BaseModel):
+    messages: list[ChatMessage] = Field(min_length=1, max_length=50)
+
+
+class ExtractResponse(BaseModel):
+    resume: dict[str, Any]
+    missing: list[str] = Field(default_factory=list)
+    model: str
+    demo: bool = False
+
+
+class SaveResumeRequest(BaseModel):
+    resume: dict[str, Any]
+
+
+class SaveChatRequest(BaseModel):
+    messages: list[ChatMessage] = Field(max_length=200)
+
+
 class HealthResponse(BaseModel):
     status: str
     version: str

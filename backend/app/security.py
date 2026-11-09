@@ -31,3 +31,16 @@ async def require_liepin_token(
             detail="缺少猎聘 token。请先到猎聘授权页生成并粘贴 token。",
         )
     return token
+
+
+async def require_session_id(
+    x_session_id: str | None = Header(default=None),
+) -> str:
+    """Anonymous single-user session key used to scope saved data.
+
+    Not authentication: it only separates data between browsers.
+    """
+    session_id = (x_session_id or "").strip()
+    if not session_id:
+        return "local"
+    return session_id[:64]

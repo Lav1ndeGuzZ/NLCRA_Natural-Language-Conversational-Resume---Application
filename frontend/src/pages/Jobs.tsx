@@ -8,7 +8,7 @@ import {
   SendOutlined,
   TagsOutlined,
 } from "@ant-design/icons";
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Alert,
   App as AntApp,
@@ -24,14 +24,17 @@ import {
   Typography,
 } from "antd";
 import {
+  addApplication,
   ApiError,
   applyLiepinJob,
   demoApply,
   getDemoJobs,
+  getSavedResume,
+  scoreJobs,
   searchLiepinJobs,
 } from "../api/client";
 import { useSessionStore } from "../store/session";
-import type { DemoJob, JobSearchForm } from "../types";
+import type { DemoJob, JobMatch, JobSearchForm } from "../types";
 
 type JobCard = {
   id: number;
@@ -112,19 +115,31 @@ function demoToCard(job: DemoJob): JobCard {
     experience: job.experience,
     education: job.education,
     tags: job.tags,
-    score: job.match_score,
+    score: 0,
     source: "demo",
     raw: job,
   };
 }
 
+const jobKey = (job: { id: number; kind?: "1" | "2" }) => `${job.id}-${job.kind ?? "x"}`;
+
 export default function Jobs() {
   const { message, modal } = AntApp.useApp();
+  const queryClient = useQueryClient();
   const token = useSessionStore((state) => state.token);
+  const resumeDraft = useSessionStore((state) => state.resumeDraft);
   const [form] = Form.useForm<JobSearchForm>();
   const [realJobs, setRealJobs] = useState<JobCard[] | null>(null);
   const [rawResponse, setRawResponse] = useState<unknown>(null);
   const [selectedJob, setSelectedJob] = useState<JobCard | null>(null);
+  const [matchMap, setMatchMap] = useState<Record<string, JobMatch>>({});
+
+  const savedResumeQuery = useQuery({
+    queryKey: ["saved-resume"],
+    queryFn: getSavedResume,
+    staleTime: Infinity,
+  });
+  const activeResume = resumeDraft ?? savedResumeQuery.data?.data ?? null;
 
   const demoQuery = useQuery({ queryKey: ["demo-jobs"], queryFn: getDemoJobs });
   const demoJobs = useMemo(
@@ -157,6 +172,38 @@ export default function Jobs() {
     },
   });
 
+  const matchMutation = useMutation({
+    mutationFn: () => {
+      if (!activeResume) {
+        throw new Error("请先在「对话助手」生成简历，或在「简历中心」保存一份简历");
+      }
+      const targets = jobs.slice(0, 10);
+      return scoreJobs(
+        activeResume,
+        targets.map((job) => ({
+          job_id: job.id,
+          title: job.title,
+          company: job.company,
+          city: job.city,
+          salary: job.salary,
+          experience: job.experience,
+          education: job.education,
+          tags: job.tags,
+        })),
+      );
+    },
+    onSuccess: (result) => {
+      const next: Record<string, JobMatch> = {};
+      result.results.forEach((item, index) => {
+        const job = jobs[index];
+        if (job) next[jobKey(job)] = item;
+      });
+      setMatchMap(next);
+      message.success(result.demo ? "已按规则完成匹配（未启用模型）" : "匹配分析完成");
+    },
+    onError: (error: Error) => message.error(error.message || "匹配分析失败"),
+  });
+
   const applyMutation = useMutation({
     mutationFn: async (job: JobCard) => {
       if (!job.kind) throw new Error("该职位缺少 jobKind，无法投递");
@@ -165,11 +212,22 @@ export default function Jobs() {
     },
     onSuccess: (result, job) => {
       const isDemo = Boolean(result.demo);
+      addApplication({
+        job_id: job.id,
+        job_kind: job.kind ?? "2",
+        title: job.title,
+        company: job.company,
+        city: job.city,
+        salary: job.salary,
+        note: isDemo ? "演示投递" : "",
+      })
+        .then(() => queryClient.invalidateQueries({ queryKey: ["applications"] }))
+        .catch(() => undefined);
       modal.success({
         title: isDemo ? "演示投递成功" : "投递成功",
         content: isDemo
-          ? "当前未连接猎聘，这是一次演示投递。连接猎聘后可在真实职位上投递。"
-          : `已向「${job.company} · ${job.title}」发起投递。猎聘当前不支持查询状态，请稍后到猎聘 App 查看 HR 回复，并回到工具手动更新状态。`,
+          ? "当前未连接猎聘，这是一次演示投递，已记入投递记录。连接猎聘后可在真实职位上投递。"
+          : `已向「${job.company} · ${job.title}」发起投递，并记入投递记录。猎聘当前不支持查询状态，请稍后到猎聘 App 查看 HR 回复，回到「工作台」更新状态。`,
       });
     },
     onError: (error: Error) => {
@@ -221,7 +279,7 @@ export default function Jobs() {
       <div className="page-head">
         <div>
           <h2>职位搜索</h2>
-          <p>连接猎聘后搜索真实职位；未连接时可用演示职位体验匹配与投递流程。</p>
+          <p>连接猎聘后搜索真实职位；点击「匹配分析」用你的简历给当前职位打分并列出缺口。</p>
         </div>
         <Tag color={token ? "green" : "gold"}>{token ? "真实猎聘" : "演示数据"}</Tag>
       </div>
@@ -263,6 +321,13 @@ export default function Jobs() {
               <Button onClick={() => { setRealJobs(null); setRawResponse(null); }}>
                 重置
               </Button>
+              <Button
+                icon={<RadarChartOutlined />}
+                loading={matchMutation.isPending}
+                onClick={() => matchMutation.mutate()}
+              >
+                匹配分析
+              </Button>
             </Space>
           </Form.Item>
         </Form>
@@ -281,63 +346,73 @@ export default function Jobs() {
         </div>
       ) : (
         <div className="job-grid">
-          {jobs.map((job) => (
-            <article className="job-card" key={`${job.id}-${job.kind ?? "x"}`}>
-              <div className="job-head">
-                <div>
-                  <div className="job-title">{job.title}</div>
-                  <div className="job-company">
-                    <BankOutlined /> {job.company}
+          {jobs.map((job) => {
+            const match = matchMap[jobKey(job)];
+            return (
+              <article className="job-card" key={jobKey(job)}>
+                <div className="job-head">
+                  <div>
+                    <div className="job-title">{job.title}</div>
+                    <div className="job-company">
+                      <BankOutlined /> {job.company}
+                    </div>
                   </div>
+                  <div className="job-salary">{job.salary}</div>
                 </div>
-                <div className="job-salary">{job.salary}</div>
-              </div>
 
-              <div className="job-meta">
-                <span>
-                  <EnvironmentOutlined /> {job.city}
-                </span>
-                <span>{job.experience}</span>
-                <span>{job.education}</span>
-                {job.source === "demo" && <Tag color="gold">演示</Tag>}
-              </div>
-
-              <div className="job-tags">
-                {job.tags.slice(0, 5).map((tag) => (
-                  <Tag key={tag} icon={<TagsOutlined />}>
-                    {tag}
-                  </Tag>
-                ))}
-              </div>
-
-              <div className="score-row">
-                <div>
-                  <span className="score-num">{job.score || "—"}</span>
-                  <span className="score-label"> 匹配分</span>
+                <div className="job-meta">
+                  <span>
+                    <EnvironmentOutlined /> {job.city}
+                  </span>
+                  <span>{job.experience}</span>
+                  <span>{job.education}</span>
+                  {job.source === "demo" && <Tag color="gold">演示</Tag>}
                 </div>
-                <Progress
-                  percent={job.score}
-                  showInfo={false}
-                  strokeColor={{ "0%": "#60a5fa", "100%": "#2563eb" }}
-                  style={{ flex: 1, margin: 0 }}
-                />
-                <Space size={6}>
-                  <Button size="small" icon={<RadarChartOutlined />} onClick={() => setSelectedJob(job)}>
-                    匹配
-                  </Button>
-                  <Button
-                    size="small"
-                    type="primary"
-                    icon={<SendOutlined />}
-                    loading={applyMutation.isPending}
-                    onClick={() => confirmApply(job)}
-                  >
-                    投递
-                  </Button>
-                </Space>
-              </div>
-            </article>
-          ))}
+
+                <div className="job-tags">
+                  {job.tags.slice(0, 5).map((tag) => {
+                    const isMissing = match?.missing.includes(tag);
+                    return (
+                      <Tag key={tag} icon={<TagsOutlined />} color={isMissing ? "red" : undefined}>
+                        {tag}
+                      </Tag>
+                    );
+                  })}
+                </div>
+
+                <div className="score-row">
+                  <div>
+                    <span className="score-num">{match ? match.score : "—"}</span>
+                    <span className="score-label"> 匹配分</span>
+                  </div>
+                  <Progress
+                    percent={match?.score ?? 0}
+                    showInfo={false}
+                    strokeColor={{ "0%": "#60a5fa", "100%": "#2563eb" }}
+                    style={{ flex: 1, margin: 0 }}
+                  />
+                  <Space size={6}>
+                    <Button
+                      size="small"
+                      icon={<RadarChartOutlined />}
+                      onClick={() => setSelectedJob(job)}
+                    >
+                      匹配
+                    </Button>
+                    <Button
+                      size="small"
+                      type="primary"
+                      icon={<SendOutlined />}
+                      loading={applyMutation.isPending}
+                      onClick={() => confirmApply(job)}
+                    >
+                      投递
+                    </Button>
+                  </Space>
+                </div>
+              </article>
+            );
+          })}
         </div>
       )}
 
@@ -357,68 +432,100 @@ export default function Jobs() {
         width={640}
         title={selectedJob ? `匹配报告 · ${selectedJob.title}` : "匹配报告"}
       >
-        {selectedJob && (
-          <div>
-            <Space size={10} wrap style={{ marginBottom: 16 }}>
-              <Tag color="blue">匹配分 {selectedJob.score || "—"}</Tag>
-              <Tag>{selectedJob.company}</Tag>
-              <Tag>{selectedJob.city}</Tag>
-              {selectedJob.source === "demo" && <Tag color="gold">演示数据</Tag>}
-            </Space>
-
-            <Alert
-              type="info"
-              showIcon
-              message="匹配报告（可行性版本）"
-              description="当前版本先用职位结构化字段与演示规则生成报告；接入真实搜索响应后，会展开为「职位要求 → 简历证据 → 缺口」的逐条对照。"
-              style={{ marginBottom: 16 }}
-            />
-
-            {[
-              { label: "核心技能", value: Math.min(100, selectedJob.score + 4) },
-              { label: "经验相关度", value: Math.max(40, selectedJob.score - 6) },
-              { label: "地点/薪资", value: Math.max(35, selectedJob.score - 10) },
-            ].map((dimension) => (
-              <div key={dimension.label} style={{ marginBottom: 10 }}>
-                <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12 }}>
-                  <span>{dimension.label}</span>
-                  <span>{dimension.value}</span>
-                </div>
-                <Progress
-                  percent={dimension.value}
-                  showInfo={false}
-                  strokeColor="#2563eb"
-                  size="small"
-                />
-              </div>
-            ))}
-
-            <div style={{ marginTop: 14, fontSize: 12, color: "#475569", lineHeight: 1.8 }}>
+        {selectedJob &&
+          (() => {
+            const match = matchMap[jobKey(selectedJob)];
+            return (
               <div>
-                <CheckCircleOutlined style={{ color: "#16a34a" }} /> 建议：优先补充与「
-                {selectedJob.tags.slice(0, 2).join("、") || "岗位关键词"}
-                」直接相关的项目证据，并把结果量化。
-              </div>
-              <div style={{ marginTop: 6 }}>
-                缺口：当前演示数据无法读取完整 JD；真实接入后需要确认搜索结果是否包含职位要求全文。
-              </div>
-            </div>
+                <Space size={10} wrap style={{ marginBottom: 16 }}>
+                  <Tag color="blue">匹配分 {match ? match.score : "—"}</Tag>
+                  <Tag>{selectedJob.company}</Tag>
+                  <Tag>{selectedJob.city}</Tag>
+                  {selectedJob.source === "demo" && <Tag color="gold">演示数据</Tag>}
+                </Space>
 
-            <div style={{ marginTop: 18, textAlign: "right" }}>
-              <Button
-                type="primary"
-                icon={<SendOutlined />}
-                onClick={() => {
-                  const job = selectedJob;
-                  setSelectedJob(null);
-                  confirmApply(job);
-                }}
-              >
-                去投递
-              </Button>
-            </div>
-          </div>
-        )}
+                {!match ? (
+                  <Alert
+                    type="info"
+                    showIcon
+                    message="还没有做匹配分析"
+                    description={
+                      activeResume
+                        ? "点击工具栏的「匹配分析」，系统会用你的简历与当前职位逐条对照，给出分数、匹配项和缺口。"
+                        : "还没有简历。请先到「对话助手」说一段经历并生成简历，或在「简历中心」保存一份简历。"
+                    }
+                    style={{ marginBottom: 16 }}
+                  />
+                ) : (
+                  <>
+                    <div style={{ marginBottom: 14 }}>
+                      <Progress
+                        percent={match.score}
+                        strokeColor={{ "0%": "#60a5fa", "100%": "#2563eb" }}
+                        format={(value) => `${value} 分`}
+                      />
+                    </div>
+
+                    <div style={{ marginBottom: 12 }}>
+                      <div style={{ fontSize: 12, color: "#64748b", marginBottom: 6 }}>已匹配</div>
+                      <Space size={6} wrap>
+                        {match.matched.length > 0 ? (
+                          match.matched.map((item) => (
+                            <Tag key={item} color="green" icon={<CheckCircleOutlined />}>
+                              {item}
+                            </Tag>
+                          ))
+                        ) : (
+                          <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+                            暂无明显匹配项
+                          </Typography.Text>
+                        )}
+                      </Space>
+                    </div>
+
+                    <div style={{ marginBottom: 12 }}>
+                      <div style={{ fontSize: 12, color: "#64748b", marginBottom: 6 }}>缺口</div>
+                      <Space size={6} wrap>
+                        {match.missing.length > 0 ? (
+                          match.missing.map((item) => (
+                            <Tag key={item} color="red">
+                              {item}
+                            </Tag>
+                          ))
+                        ) : (
+                          <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+                            没有明显缺口
+                          </Typography.Text>
+                        )}
+                      </Space>
+                    </div>
+
+                    <Alert
+                      type="warning"
+                      showIcon
+                      message="下一步建议"
+                      description={match.suggestion || "补充一条量化成果后再投递。"}
+                      style={{ marginBottom: 16 }}
+                    />
+                  </>
+                )}
+
+                <div style={{ marginTop: 18, textAlign: "right" }}>
+                  <Button
+                    type="primary"
+                    icon={<SendOutlined />}
+                    onClick={() => {
+                      const job = selectedJob;
+                      setSelectedJob(null);
+                      confirmApply(job);
+                    }}
+                  >
+                    去投递
+                  </Button>
+                </div>
+              </div>
+            );
+          })()}
       </Modal>
     </div>
   );
