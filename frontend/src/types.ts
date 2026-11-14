@@ -39,6 +39,7 @@ export type JobSearchForm = {
   salary_floor?: string;
   salary_cap?: string;
   page?: number;
+  pages?: number;
 };
 
 export type ApiEnvelope<T> = {
@@ -46,6 +47,7 @@ export type ApiEnvelope<T> = {
   data: T;
   demo?: boolean;
   total?: number;
+  pages?: number;
 };
 
 export type ResumeData = Record<string, unknown>;

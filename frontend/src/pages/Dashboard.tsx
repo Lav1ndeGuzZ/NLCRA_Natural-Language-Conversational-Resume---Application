@@ -117,18 +117,11 @@ export default function Dashboard() {
   return (
     <div className="page">
       <section className="hero">
-        <div className="hero-eyebrow">
-          <ThunderboltOutlined /> 对话式求职工作台 · 可行性版本
-        </div>
         <h1 className="hero-title">
           让 AI 先“访谈”你，
           <br />
           再把经历变成一份能投的简历。
         </h1>
-        <p className="hero-sub">
-          不注册、不登录。对话梳理经历，自动抽取成结构化简历，再按简历给职位打分并列出缺口；
-          投递后在这里回填结果，形成完整闭环。
-        </p>
         <div className="hero-actions">
           <Button
             type="primary"

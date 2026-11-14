@@ -95,6 +95,28 @@ docker compose up -d --build
 - `x-user-token`：猎聘 token；
 - `x-access-code`：设置了 `APP_ACCESS_CODE` 时需要。
 
+## VS Code 一键启动/重启
+
+已提供 `.vscode/tasks.json`：
+
+1. VS Code 打开项目；
+2. `Terminal → Run Task...`；
+3. 选择 **启动全部（前端 + 后端）**；
+4. 浏览器打开 <http://127.0.0.1:5173>。
+
+单独启动：
+
+- **后端: 启动** → `http://127.0.0.1:8000`
+- **前端: 启动** → `http://127.0.0.1:5173`
+
+重启：在 VS Code 终端面板点垃圾桶停止旧任务，再重新 Run Task。  
+如果端口被占用：
+
+```powershell
+netstat -ano | findstr :8000
+taskkill /PID <PID> /F
+```
+
 ## 已知边界
 
 - 猎聘 Agent API 暂不支持查询投递状态；投递后需手动回填/到猎聘 App 查看；

@@ -30,6 +30,7 @@ class JobSearchRequest(BaseModel):
     comp_nature: str | None = None
     company_name: str | None = None
     page: int = Field(default=0, ge=0, le=50)
+    pages: int = Field(default=3, ge=1, le=5, description="合并页数，每页约 20 条")
 
 
 class ApplyRequest(BaseModel):

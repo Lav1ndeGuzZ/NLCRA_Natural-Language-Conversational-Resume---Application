@@ -1,9 +1,11 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   BankOutlined,
   CheckCircleOutlined,
   EnvironmentOutlined,
+  LeftOutlined,
   RadarChartOutlined,
+  RightOutlined,
   SearchOutlined,
   SendOutlined,
   TagsOutlined,
@@ -123,6 +125,71 @@ function demoToCard(job: DemoJob): JobCard {
 
 const jobKey = (job: { id: number; kind?: "1" | "2" }) => `${job.id}-${job.kind ?? "x"}`;
 
+const PAGE_SIZE = 30;
+const MAX_UI_PAGES = 50;
+const MAX_SOURCE_PAGE = 50;
+const SOURCE_PAGES_PER_REQUEST = 3;
+
+function mergeJobs(current: JobCard[], incoming: JobCard[]): JobCard[] {
+  const seen = new Set(current.map(jobKey));
+  const merged = [...current];
+  incoming.forEach((job) => {
+    const key = jobKey(job);
+    if (seen.has(key)) return;
+    seen.add(key);
+    merged.push(job);
+  });
+  return merged;
+}
+
+type JobPagerProps = {
+  current: number;
+  loaded: number;
+  canPrev: boolean;
+  canNext: boolean;
+  loading: boolean;
+  className?: string;
+  onPrev: () => void;
+  onNext: () => void;
+};
+
+function JobPager({
+  current,
+  loaded,
+  canPrev,
+  canNext,
+  loading,
+  className,
+  onPrev,
+  onNext,
+}: JobPagerProps) {
+  return (
+    <div className={`job-pagination ${className ?? ""}`}>
+      <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+        第 {current} 页 / 最多 {MAX_UI_PAGES} 页 · 已加载 {loaded} 个职位
+      </Typography.Text>
+      <Space>
+        <Button
+          icon={<LeftOutlined />}
+          disabled={!canPrev || loading}
+          onClick={onPrev}
+        >
+          上一页
+        </Button>
+        <Button
+          icon={<RightOutlined />}
+          iconPosition="end"
+          loading={loading}
+          disabled={!canNext}
+          onClick={onNext}
+        >
+          下一页
+        </Button>
+      </Space>
+    </div>
+  );
+}
+
 export default function Jobs() {
   const { message, modal } = AntApp.useApp();
   const queryClient = useQueryClient();
@@ -130,9 +197,16 @@ export default function Jobs() {
   const resumeDraft = useSessionStore((state) => state.resumeDraft);
   const [form] = Form.useForm<JobSearchForm>();
   const [realJobs, setRealJobs] = useState<JobCard[] | null>(null);
-  const [rawResponse, setRawResponse] = useState<unknown>(null);
   const [selectedJob, setSelectedJob] = useState<JobCard | null>(null);
   const [matchMap, setMatchMap] = useState<Record<string, JobMatch>>({});
+  const [uiPage, setUiPage] = useState(1);
+  const [nextSourcePage, setNextSourcePage] = useState(SOURCE_PAGES_PER_REQUEST);
+  const [exhausted, setExhausted] = useState(false);
+  const lastSearchRef = useRef<JobSearchForm | null>(null);
+
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }, [uiPage]);
 
   const savedResumeQuery = useQuery({
     queryKey: ["saved-resume"],
@@ -147,6 +221,16 @@ export default function Jobs() {
     [demoQuery.data],
   );
   const jobs = realJobs ?? demoJobs;
+  const pageJobs = useMemo(() => {
+    const start = (uiPage - 1) * PAGE_SIZE;
+    return jobs.slice(start, start + PAGE_SIZE);
+  }, [jobs, uiPage]);
+  const loadedPages = Math.max(1, Math.ceil(jobs.length / PAGE_SIZE));
+  const canGoPrev = uiPage > 1;
+  const canGoNext =
+    uiPage < MAX_UI_PAGES &&
+    !exhausted &&
+    (uiPage < loadedPages || nextSourcePage <= MAX_SOURCE_PAGE);
 
   const searchMutation = useMutation({
     mutationFn: (values: JobSearchForm) => {
@@ -154,13 +238,16 @@ export default function Jobs() {
       return searchLiepinJobs(token, values);
     },
     onSuccess: (result) => {
-      setRawResponse(result.data);
       const normalized = normalizeJobs(result.data);
       setRealJobs(normalized);
+      setMatchMap({});
+      setUiPage(1);
+      setNextSourcePage(result.pages ?? SOURCE_PAGES_PER_REQUEST);
+      setExhausted(normalized.length === 0);
       if (normalized.length) {
         message.success(`找到 ${normalized.length} 个职位`);
       } else {
-        message.warning("已返回数据，但暂未识别职位字段；可展开原始响应查看");
+        message.warning("已返回数据，但暂未识别职位字段；请调整关键词后重试");
       }
     },
     onError: (error: Error) => {
@@ -172,12 +259,46 @@ export default function Jobs() {
     },
   });
 
+  const loadMoreMutation = useMutation({
+    mutationFn: () => {
+      if (!token) throw new Error("请先连接猎聘");
+      const base = lastSearchRef.current;
+      if (!base) throw new Error("请先搜索职位");
+      return searchLiepinJobs(token, {
+        ...base,
+        page: nextSourcePage,
+        pages: SOURCE_PAGES_PER_REQUEST,
+      });
+    },
+    onSuccess: (result) => {
+      const incoming = normalizeJobs(result.data);
+      const merged = mergeJobs(realJobs ?? [], incoming);
+      const consumed = result.pages ?? SOURCE_PAGES_PER_REQUEST;
+      const nextStart = nextSourcePage + consumed;
+      setRealJobs(merged);
+      setNextSourcePage(nextStart);
+      setExhausted(incoming.length < PAGE_SIZE || nextStart > MAX_SOURCE_PAGE);
+      if (incoming.length === 0) {
+        message.info("没有更多职位了");
+        return;
+      }
+      setUiPage((page) => page + 1);
+    },
+    onError: (error: Error) => {
+      if (error instanceof ApiError && error.status === 401) {
+        message.error("猎聘 token 已失效，请到「连接猎聘」重新生成");
+        return;
+      }
+      message.error(error.message || "加载更多职位失败");
+    },
+  });
+
   const matchMutation = useMutation({
     mutationFn: () => {
       if (!activeResume) {
         throw new Error("请先在「对话助手」生成简历，或在「简历中心」保存一份简历");
       }
-      const targets = jobs.slice(0, 10);
+      const targets = pageJobs.slice(0, 10);
       return scoreJobs(
         activeResume,
         targets.map((job) => ({
@@ -195,7 +316,7 @@ export default function Jobs() {
     onSuccess: (result) => {
       const next: Record<string, JobMatch> = {};
       result.results.forEach((item, index) => {
-        const job = jobs[index];
+        const job = pageJobs[index];
         if (job) next[jobKey(job)] = item;
       });
       setMatchMap(next);
@@ -239,14 +360,28 @@ export default function Jobs() {
     if (!token) {
       message.info("未连接猎聘，当前展示演示职位；连接后可搜索真实职位。");
       setRealJobs(null);
+      setUiPage(1);
+      setExhausted(true);
       return;
     }
     const payload: JobSearchForm = {
       ...values,
+      pages: SOURCE_PAGES_PER_REQUEST,
       salary_floor: values.salary_floor ? String(values.salary_floor) : undefined,
       salary_cap: values.salary_cap ? String(values.salary_cap) : undefined,
     };
+    lastSearchRef.current = payload;
     searchMutation.mutate(payload);
+  };
+
+  const goToNextPage = () => {
+    if (uiPage < loadedPages) {
+      setUiPage((page) => page + 1);
+      return;
+    }
+    if (canGoNext) {
+      loadMoreMutation.mutate();
+    }
   };
 
   const confirmApply = (job: JobCard) => {
@@ -281,7 +416,6 @@ export default function Jobs() {
           <h2>职位搜索</h2>
           <p>连接猎聘后搜索真实职位；点击「匹配分析」用你的简历给当前职位打分并列出缺口。</p>
         </div>
-        <Tag color={token ? "green" : "gold"}>{token ? "真实猎聘" : "演示数据"}</Tag>
       </div>
 
       {!token && (
@@ -318,7 +452,7 @@ export default function Jobs() {
               >
                 搜索
               </Button>
-              <Button onClick={() => { setRealJobs(null); setRawResponse(null); }}>
+              <Button onClick={() => { setRealJobs(null); setUiPage(1); setExhausted(true); }}>
                 重置
               </Button>
               <Button
@@ -333,6 +467,19 @@ export default function Jobs() {
         </Form>
       </div>
 
+      {realJobs && jobs.length > 0 && (
+        <JobPager
+          className="job-pagination-top"
+          current={uiPage}
+          loaded={jobs.length}
+          canPrev={canGoPrev}
+          canNext={canGoNext}
+          loading={loadMoreMutation.isPending}
+          onPrev={() => setUiPage((page) => Math.max(1, page - 1))}
+          onNext={goToNextPage}
+        />
+      )}
+
       <div className="section-title">
         <h3>{realJobs ? "猎聘搜索结果" : "推荐职位（演示）"}</h3>
         <Typography.Text type="secondary" style={{ fontSize: 12 }}>
@@ -346,7 +493,7 @@ export default function Jobs() {
         </div>
       ) : (
         <div className="job-grid">
-          {jobs.map((job) => {
+          {pageJobs.map((job) => {
             const match = matchMap[jobKey(job)];
             return (
               <article className="job-card" key={jobKey(job)}>
@@ -416,13 +563,16 @@ export default function Jobs() {
         </div>
       )}
 
-      {Boolean(rawResponse) && (
-        <div className="section-title">
-          <h3>原始响应</h3>
-        </div>
-      )}
-      {Boolean(rawResponse) && (
-        <pre className="json-block">{JSON.stringify(rawResponse, null, 2)}</pre>
+      {realJobs && jobs.length > 0 && (
+        <JobPager
+          current={uiPage}
+          loaded={jobs.length}
+          canPrev={canGoPrev}
+          canNext={canGoNext}
+          loading={loadMoreMutation.isPending}
+          onPrev={() => setUiPage((page) => Math.max(1, page - 1))}
+          onNext={goToNextPage}
+        />
       )}
 
       <Modal

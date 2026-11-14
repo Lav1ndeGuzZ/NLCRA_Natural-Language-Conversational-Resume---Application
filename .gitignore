@@ -27,3 +27,7 @@ Thumbs.db
 
 # deployment
 data/
+
+# delivery repo excludes planning documents and research scratch
+docs/
+research/
