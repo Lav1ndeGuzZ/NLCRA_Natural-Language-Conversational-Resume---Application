@@ -12,7 +12,7 @@ EXTRACT_SYSTEM_PROMPT = """你是简历信息抽取器。输入是求职者与�
 {
   "basics": {"name": "", "sex": "", "birthday": "", "city": "", "phone": "", "email": "", "wechat": ""},
   "selfAssess": "",
-  "education": [{"school": "", "major": "", "degree": "", "start": "", "end": ""}],
+  "education": [{"school": "", "major": "", "degree": "", "gpa": "", "start": "", "end": ""}],
   "work": [{"company": "", "title": "", "start": "", "end": "", "description": "", "highlights": ["..."]}],
   "projects": [{"name": "", "role": "", "start": "", "end": "", "description": "", "tech": ["..."]}],
   "skills": [{"name": "", "level": ""}],
@@ -24,8 +24,9 @@ EXTRACT_SYSTEM_PROMPT = """你是简历信息抽取器。输入是求职者与�
 2. 不确定的字段留空，不要猜测、不要补写、不要美化。
 3. work.highlights 优先抽取带结果的表述（数字、比例、时长、规模），一句一条。
 4. 时间统一为 YYYY-MM 或 YYYY，进行中写「至今」。
-5. salaryLow / salaryHigh / salaryMonths 是整数，单位 K，例如「25-35K·14 薪」→ 25、35、14。
-6. 只输出 JSON，不要 Markdown、不要解释。"""
+5. 成绩写进 gpa：GPA、排名、平均分都放这里，例如「3.8/4.0」「专业前 10%」。
+6. salaryLow / salaryHigh / salaryMonths 是整数，单位 K，例如「25-35K·14 薪」→ 25、35、14。
+7. 只输出 JSON，不要 Markdown、不要解释。"""
 
 
 class ExtractionError(Exception):

@@ -7,7 +7,14 @@ import type {
   ChatMessage,
   ChatResponse,
   DemoJob,
+  EmailDraft,
+  EmailReply,
   ExtractResult,
+  CompanySite,
+  OfficialJob,
+  Reminder,
+  ResumeAnalysis,
+  ResumeTemplate,
   Health,
   JobSearchForm,
   MatchResponse,
@@ -28,10 +35,12 @@ export class ApiError extends Error {
 
 function authHeaders(token?: string): HeadersInit {
   const headers: Record<string, string> = {};
-  const { accessCode, sessionId } = useSessionStore.getState();
+  const { accessCode, sessionId, qqEmail, qqAuthCode } = useSessionStore.getState();
   if (accessCode) headers["x-access-code"] = accessCode;
   if (sessionId) headers["x-session-id"] = sessionId;
   if (token) headers["x-user-token"] = token;
+  if (qqEmail) headers["x-qq-email"] = qqEmail;
+  if (qqAuthCode) headers["x-qq-auth-code"] = qqAuthCode;
   return headers;
 }
 
@@ -203,6 +212,7 @@ export type SavedResume = {
   ok: boolean;
   data: ResumeData | null;
   updated_at: string | null;
+  template_id?: string;
 };
 
 export function getSavedResume(): Promise<SavedResume> {
@@ -265,6 +275,10 @@ export type NewApplication = {
   city: string;
   salary: string;
   note?: string;
+  source?: string;
+  contact_email?: string;
+  jd_url?: string;
+  status_source?: string;
 };
 
 export function listApplications(): Promise<ApplicationList> {
@@ -282,7 +296,7 @@ export function addApplication(
 
 export function updateApplication(
   id: number,
-  patch: { status?: ApplicationStatus; note?: string },
+  patch: { status?: ApplicationStatus; note?: string; status_source?: string },
 ): Promise<{ ok: boolean; data: Application; counts: ApplicationCounts }> {
   return request<{ ok: boolean; data: Application; counts: ApplicationCounts }>(
     `/api/applications/${id}`,
@@ -290,15 +304,130 @@ export function updateApplication(
   );
 }
 
-export async function downloadDocx(resume: ResumeData, filename: string): Promise<Blob> {
+export async function downloadDocx(resume: ResumeData, filename: string, templateId = "classic"): Promise<Blob> {
   const headers = new Headers({ "Content-Type": "application/json", ...authHeaders() });
   const response = await fetch(`${API_BASE}/api/resume/export/docx`, {
     method: "POST",
     headers,
-    body: JSON.stringify({ resume, filename }),
+    body: JSON.stringify({ resume, filename, template_id: templateId }),
   });
   if (!response.ok) {
     throw new ApiError(response.status, await parseError(response));
   }
   return response.blob();
+}
+
+export async function downloadPdf(resume: ResumeData, filename: string, templateId = "classic"): Promise<Blob> {
+  const headers = new Headers({ "Content-Type": "application/json", ...authHeaders() });
+  const response = await fetch(`${API_BASE}/api/resume/export/pdf`, {
+    method: "POST",
+    headers,
+    body: JSON.stringify({ resume, filename, template_id: templateId }),
+  });
+  if (!response.ok) {
+    throw new ApiError(response.status, await parseError(response));
+  }
+  return response.blob();
+}
+
+export function getResumeTemplates(): Promise<ApiEnvelope<ResumeTemplate[]>> {
+  return request<ApiEnvelope<ResumeTemplate[]>>("/api/resume/templates");
+}
+
+export function analyzeResume(resume: ResumeData, target = ""): Promise<ApiEnvelope<ResumeAnalysis>> {
+  return request<ApiEnvelope<ResumeAnalysis>>("/api/resume/analyze", {
+    method: "POST",
+    body: { resume, target } as unknown as BodyInit,
+  });
+}
+
+export function saveResumeWithTemplate(
+  resume: ResumeData,
+  templateId: string,
+): Promise<{ ok: boolean; updated_at: string; template_id: string; missing: string[] }> {
+  return request<{ ok: boolean; updated_at: string; template_id: string; missing: string[] }>("/api/resume", {
+    method: "PUT",
+    body: { resume, template_id: templateId } as unknown as BodyInit,
+  });
+}
+
+export function draftEmail(
+  resume: ResumeData,
+  job: Record<string, unknown>,
+  match?: Record<string, unknown>,
+): Promise<ApiEnvelope<EmailDraft>> {
+  return request<ApiEnvelope<EmailDraft>>("/api/email/draft", {
+    method: "POST",
+    body: { resume, job, match } as unknown as BodyInit,
+  });
+}
+
+export function sendEmail(payload: {
+  to: string;
+  subject: string;
+  body: string;
+  resume: ResumeData;
+  job: Record<string, unknown>;
+  template_id?: string;
+}): Promise<ApiEnvelope<{ to: string; subject: string; attachments: string[] }>> {
+  return request<ApiEnvelope<{ to: string; subject: string; attachments: string[] }>>("/api/email/send", {
+    method: "POST",
+    body: payload as unknown as BodyInit,
+  });
+}
+
+export type EmailSyncResult = {
+  fetched: number;
+  inserted: number;
+  updated: number;
+  replies: EmailReply[];
+};
+
+export function syncEmailReplies(): Promise<{ ok: boolean; data: EmailSyncResult; applications: Application[] }> {
+  return request<{ ok: boolean; data: EmailSyncResult; applications: Application[] }>("/api/email/sync", {
+    method: "POST",
+  });
+}
+
+export function listEmailReplies(): Promise<ApiEnvelope<EmailReply[]>> {
+  return request<ApiEnvelope<EmailReply[]>>("/api/email/replies");
+}
+
+export function markRepliesRead(ids?: number[]): Promise<{ ok: boolean; updated: number }> {
+  return request<{ ok: boolean; updated: number }>("/api/email/replies/read", {
+    method: "POST",
+    body: { ids } as unknown as BodyInit,
+  });
+}
+
+export function discoverCompanySites(payload: {
+  keyword?: string;
+  city?: string;
+  companies?: string[];
+  limit?: number;
+}): Promise<{ ok: boolean; data: CompanySite[]; total: number }> {
+  return request<{ ok: boolean; data: CompanySite[]; total: number }>("/api/official/discover", {
+    method: "POST",
+    body: payload as unknown as BodyInit,
+  });
+}
+
+export function crawlOfficialJobs(payload: {
+  url: string;
+  company?: string;
+  keyword?: string;
+  max_jobs?: number;
+}): Promise<{ ok: boolean; data: OfficialJob[]; total: number }> {
+  return request<{ ok: boolean; data: OfficialJob[]; total: number }>("/api/official/crawl", {
+    method: "POST",
+    body: payload as unknown as BodyInit,
+  });
+}
+
+export function listOfficialJobs(): Promise<{ ok: boolean; data: OfficialJob[]; total: number }> {
+  return request<{ ok: boolean; data: OfficialJob[]; total: number }>("/api/official/jobs");
+}
+
+export function getReminders(): Promise<{ ok: boolean; data: Reminder[]; total: number }> {
+  return request<{ ok: boolean; data: Reminder[]; total: number }>("/api/reminders");
 }

@@ -325,7 +325,7 @@ a {
 
 .step-grid {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 14px;
 }
 
@@ -805,4 +805,82 @@ a {
 .job-pagination-top {
   margin-top: 14px;
   margin-bottom: 0;
+}
+
+.analysis-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.analysis-grid strong {
+  display: block;
+  margin-bottom: 4px;
+  color: #0f172a;
+}
+
+.analysis-grid ul {
+  margin: 0;
+  padding-left: 16px;
+  color: #475569;
+  font-size: 12px;
+  line-height: 1.65;
+}
+
+.resume-sheet.template-modern {
+  border-top: 5px solid #2563eb;
+}
+
+.resume-sheet.template-modern .resume-name {
+  text-align: left;
+  color: #1d4ed8;
+}
+
+.resume-sheet.template-compact {
+  padding: 20px 24px;
+  font-size: 12px;
+}
+
+.resume-sheet.template-compact .resume-section {
+  margin-top: 12px;
+}
+
+.resume-sheet.template-executive {
+  border-top: 5px solid #7c2d12;
+}
+
+.resume-sheet.template-executive .resume-section h4 {
+  color: #7c2d12;
+}
+
+.outreach-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.outreach-job-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.reply-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.reply-item {
+  padding: 10px 12px;
+  border: 1px solid #e6ebf3;
+  border-radius: 10px;
+  background: #fbfdff;
+}
+
+@media (max-width: 1100px) {
+  .outreach-grid,
+  .outreach-job-grid {
+    grid-template-columns: 1fr;
+  }
 }

@@ -1,9 +1,10 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   DownloadOutlined,
   LinkOutlined,
   PrinterOutlined,
   SaveOutlined,
+  ThunderboltOutlined,
 } from "@ant-design/icons";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
@@ -11,19 +12,23 @@ import {
   App as AntApp,
   Button,
   Collapse,
+  Select,
   Space,
   Tag,
   Typography,
 } from "antd";
 import {
+  analyzeResume,
   downloadDocx,
+  downloadPdf,
   getDemoResume,
   getLiepinResume,
+  getResumeTemplates,
   getSavedResume,
-  saveResume,
+  saveResumeWithTemplate,
 } from "../api/client";
 import { useSessionStore } from "../store/session";
-import type { ResumeData } from "../types";
+import type { ResumeAnalysis, ResumeData, ResumeTemplate } from "../types";
 
 function asRecord(value: unknown): Record<string, unknown> {
   return value && typeof value === "object" && !Array.isArray(value)
@@ -68,14 +73,24 @@ export default function Resume() {
   const resumeDraft = useSessionStore((state) => state.resumeDraft);
   const resumeMissing = useSessionStore((state) => state.resumeMissing);
   const setResumeDraft = useSessionStore((state) => state.setResumeDraft);
+  const storedAnalysis = useSessionStore((state) => state.resumeAnalysis);
   const [liepinResume, setLiepinResume] = useState<unknown>(null);
+  const [templateId, setTemplateId] = useState("classic");
+  const [analysis, setAnalysis] = useState<ResumeAnalysis | null>((storedAnalysis as ResumeAnalysis | null) ?? null);
 
   const demoQuery = useQuery({ queryKey: ["demo-resume"], queryFn: getDemoResume });
+  const templatesQuery = useQuery({ queryKey: ["resume-templates"], queryFn: getResumeTemplates });
+  const templates: ResumeTemplate[] = templatesQuery.data?.data ?? [];
+  const activeTemplate = templates.find((item) => item.id === templateId);
   const savedQuery = useQuery({
     queryKey: ["saved-resume"],
     queryFn: getSavedResume,
     staleTime: Infinity,
   });
+
+  useEffect(() => {
+    if (savedQuery.data?.template_id) setTemplateId(savedQuery.data.template_id);
+  }, [savedQuery.data?.template_id]);
   const savedResume = savedQuery.data?.data ?? null;
   const activeResume = resumeDraft ?? liepinResume ?? savedResume ?? demoQuery.data?.data;
   const source = resumeDraft
@@ -103,7 +118,7 @@ export default function Resume() {
       if (!activeResume) throw new Error("暂无简历可导出");
       const basics = asRecord(unwrapResume(activeResume).basics);
       const filename = text(basics.name) ? `${text(basics.name)}-简历` : "简历";
-      const blob = await downloadDocx(activeResume as ResumeData, filename);
+      const blob = await downloadDocx(activeResume as ResumeData, filename, templateId);
       const url = URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.href = url;
@@ -115,11 +130,42 @@ export default function Resume() {
     onError: (error: Error) => message.error(error.message || "导出失败"),
   });
 
+  const exportPdfMutation = useMutation({
+    mutationFn: async () => {
+      if (!activeResume) throw new Error("暂无简历可导出");
+      const basics = asRecord(unwrapResume(activeResume).basics);
+      const filename = text(basics.name) ? `${text(basics.name)}-简历` : "简历";
+      const blob = await downloadPdf(activeResume as ResumeData, filename, templateId);
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `${filename}.pdf`;
+      link.click();
+      URL.revokeObjectURL(url);
+    },
+    onSuccess: () => message.success("PDF 已开始下载"),
+    onError: (error: Error) => message.error(error.message || "PDF 导出失败"),
+  });
+
+  const analyzeMutation = useMutation({
+    mutationFn: async () => {
+      const current = unwrapResume(activeResume);
+      if (Object.keys(current).length === 0) throw new Error("暂无简历可分析");
+      const target = text(asRecord(current.jobWant).jobtitle);
+      return analyzeResume(current as ResumeData, target);
+    },
+    onSuccess: (result) => {
+      setAnalysis(result.data);
+      message.success("分析完成，可先按建议补充后再导出");
+    },
+    onError: (error: Error) => message.error(error.message || "分析失败"),
+  });
+
   const saveMutation = useMutation({
     mutationFn: async () => {
       const current = unwrapResume(activeResume);
       if (Object.keys(current).length === 0) throw new Error("暂无简历可保存");
-      return saveResume(current as ResumeData);
+      return saveResumeWithTemplate(current as ResumeData, templateId);
     },
     onSuccess: (result) => {
       if (resumeDraft) setResumeDraft(resumeDraft, result.missing ?? resumeMissing);
@@ -151,6 +197,20 @@ export default function Resume() {
           <Tag color={resumeDraft ? "blue" : liepinResume ? "green" : savedResume ? "cyan" : "gold"}>
             {source}
           </Tag>
+          <Select
+            value={templateId}
+            style={{ width: 150 }}
+            onChange={setTemplateId}
+            options={templates.map((item) => ({ value: item.id, label: item.name }))}
+            placeholder="选择模板"
+          />
+          <Button
+            icon={<ThunderboltOutlined />}
+            loading={analyzeMutation.isPending}
+            onClick={() => analyzeMutation.mutate()}
+          >
+            先分析
+          </Button>
           {token && (
             <Button
               icon={<LinkOutlined />}
@@ -175,8 +235,15 @@ export default function Resume() {
           >
             导出 DOCX
           </Button>
+          <Button
+            icon={<DownloadOutlined />}
+            loading={exportPdfMutation.isPending}
+            onClick={() => exportPdfMutation.mutate()}
+          >
+            导出 PDF
+          </Button>
           <Button icon={<PrinterOutlined />} onClick={() => window.print()}>
-            打印 / PDF
+            打印
           </Button>
         </Space>
       </div>
@@ -213,7 +280,38 @@ export default function Resume() {
         />
       )}
 
-      <div className="resume-sheet">
+      {activeTemplate && (
+        <Typography.Paragraph type="secondary" style={{ fontSize: 12, marginBottom: 10 }}>
+          当前模板：{activeTemplate.name} · {activeTemplate.description}
+        </Typography.Paragraph>
+      )}
+
+      {analysis && (
+        <div className="panel" style={{ marginBottom: 14 }}>
+          <div className="section-title">
+            <h3>简历分析</h3>
+            <Tag color={analysis.score >= 75 ? "green" : analysis.score >= 55 ? "gold" : "red"}>
+              {analysis.score} 分
+            </Tag>
+          </div>
+          <div className="analysis-grid">
+            <div>
+              <strong>可用优势</strong>
+              <ul>{analysis.strengths.map((item, index) => <li key={index}>{item}</li>)}</ul>
+            </div>
+            <div>
+              <strong>主要缺口</strong>
+              <ul>{analysis.gaps.map((item, index) => <li key={index}>{item}</li>)}</ul>
+            </div>
+            <div>
+              <strong>先改什么</strong>
+              <ul>{analysis.suggestions.map((item, index) => <li key={index}>{item}</li>)}</ul>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <div className={`resume-sheet template-${templateId}`}>
         <div className="resume-header">
           <div className="resume-name">{text(basics.name) || "姓名"}</div>
           <div className="resume-contact">
@@ -239,7 +337,7 @@ export default function Resume() {
               return (
                 <div className="resume-item" key={index}>
                   <div className="resume-item-title">
-                    {[record.school, record.major, record.degree].map(text).filter(Boolean).join(" · ")}
+                    {[record.school, record.major, record.degree, record.gpa].map(text).filter(Boolean).join(" · ")}
                   </div>
                   <div className="resume-item-meta">{dateRange(record.start, record.end)}</div>
                 </div>
@@ -351,7 +449,7 @@ export default function Resume() {
       </div>
 
       <Typography.Paragraph type="secondary" style={{ fontSize: 12, marginTop: 12 }}>
-        提示：当前 PDF 导出使用浏览器打印；DOCX 由后端 python-docx 生成。猎聘简历的“补写”功能将在下一阶段接入。
+        提示：DOCX / PDF 均由后端生成，模板选择会同时影响预览与导出文件。建议先「先分析」，按缺口补充后再保存和导出。
       </Typography.Paragraph>
     </div>
   );

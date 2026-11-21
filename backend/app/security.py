@@ -44,3 +44,17 @@ async def require_session_id(
     if not session_id:
         return "local"
     return session_id[:64]
+
+
+async def require_qq_credentials(
+    x_qq_email: str | None = Header(default=None),
+    x_qq_auth_code: str | None = Header(default=None),
+) -> tuple[str, str]:
+    email = (x_qq_email or "").strip()
+    auth_code = (x_qq_auth_code or "").strip()
+    if not email or not auth_code:
+        raise HTTPException(
+            status_code=400,
+            detail="请先在「投递中心」填写 QQ 邮箱和 SMTP/IMAP 授权码。",
+        )
+    return email, auth_code

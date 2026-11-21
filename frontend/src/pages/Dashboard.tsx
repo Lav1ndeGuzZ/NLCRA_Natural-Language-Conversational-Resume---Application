@@ -13,7 +13,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Alert, Button, Empty, Progress, Select, Space, Table, Tag, Typography } from "antd";
 import type { ColumnsType } from "antd/es/table";
 import { useNavigate } from "react-router-dom";
-import { getDemoJobs, getHealth, getSavedResume, listApplications, updateApplication } from "../api/client";
+import { getDemoJobs, getHealth, getReminders, getSavedResume, listApplications, updateApplication } from "../api/client";
 import { useSessionStore } from "../store/session";
 import type { Application, ApplicationStatus } from "../types";
 
@@ -37,13 +37,15 @@ export default function Dashboard() {
     staleTime: Infinity,
   });
   const { data: applications } = useQuery({ queryKey: ["applications"], queryFn: listApplications });
+  const { data: reminders } = useQuery({ queryKey: ["reminders"], queryFn: getReminders, refetchInterval: 60000 });
 
   const items = applications?.data ?? [];
   const counts = applications?.counts ?? {};
+  const dueReminders = reminders?.data ?? [];
 
   const statusMutation = useMutation({
     mutationFn: ({ id, status }: { id: number; status: ApplicationStatus }) =>
-      updateApplication(id, { status }),
+      updateApplication(id, { status, status_source: "manual" }),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["applications"] }),
   });
 
@@ -95,6 +97,20 @@ export default function Dashboard() {
             label: <Tag color={STATUS_META[key].color}>{STATUS_META[key].label}</Tag>,
           }))}
         />
+      ),
+    },
+    {
+      title: "回信",
+      dataIndex: "last_reply_at",
+      width: 86,
+      render: (value: string) => (value ? <Tag color="green">有回信</Tag> : "—"),
+    },
+    {
+      title: "状态来源",
+      dataIndex: "status_source",
+      width: 100,
+      render: (value: string) => (
+        <Tag color={value === "email" ? "blue" : "default"}>{value === "email" ? "邮件回信" : "手动"}</Tag>
       ),
     },
     {
@@ -150,6 +166,17 @@ export default function Dashboard() {
           </div>
         </div>
       </section>
+
+      {dueReminders.length > 0 && (
+        <Alert
+          type="warning"
+          showIcon
+          style={{ marginTop: 16 }}
+          message={`有 ${dueReminders.length} 条投递需要跟进`}
+          description={dueReminders.slice(0, 3).map((item) => item.kind === "reply" ? `新回信：${item.title}` : `${item.company || "公司"} · ${item.title}：已 ${item.days_since} 天`).join("；")}
+          action={<Button size="small" onClick={() => navigate("/outreach")}>去处理</Button>}
+        />
+      )}
 
       <div className="section-title">
         <h3>当前状态</h3>
@@ -240,9 +267,9 @@ export default function Dashboard() {
       </div>
 
       <div className="section-title">
-        <h3>四步跑通闭环</h3>
+        <h3>六步跑通闭环</h3>
         <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-          现在四步都有真实实现
+          对话 → 分析 → 简历 → 匹配 → 投递 → 回信
         </Typography.Text>
       </div>
 
@@ -254,18 +281,28 @@ export default function Dashboard() {
         </div>
         <div className="step-card">
           <div className="step-index">02</div>
-          <h4>信息抽取</h4>
-          <p>一键整理成结构化简历，缺失项会明确列出来。</p>
+          <h4>分析抽取</h4>
+          <p>先分析经历与缺口，再整理成结构化简历，不直接套模板。</p>
         </div>
         <div className="step-card">
           <div className="step-index">03</div>
-          <h4>职位匹配</h4>
-          <p>按简历给职位打分，输出匹配项、缺口与下一步建议。</p>
+          <h4>模板简历</h4>
+          <p>四套模板可选，支持 DOCX / PDF 导出与多版本保存。</p>
         </div>
         <div className="step-card">
           <div className="step-index">04</div>
-          <h4>投递反馈</h4>
-          <p>投递自动记档，回填面试/录用状态，复盘哪类岗位更值得投。</p>
+          <h4>岗位匹配</h4>
+          <p>按简历给职位打分，输出匹配项、缺口与下一步建议。</p>
+        </div>
+        <div className="step-card">
+          <div className="step-index">05</div>
+          <h4>多渠道投递</h4>
+          <p>猎聘 API、QQ 邮件、公司官网页，统一记入投递记录。</p>
+        </div>
+        <div className="step-card">
+          <div className="step-index">06</div>
+          <h4>回信闭环</h4>
+          <p>同步邮箱回信，自动识别面试/录用/拒绝并更新状态。</p>
         </div>
       </div>
 
@@ -274,8 +311,8 @@ export default function Dashboard() {
         type="warning"
         showIcon
         icon={<SafetyCertificateOutlined />}
-        message="可行性版本的已知边界"
-        description="猎聘当前 Agent API 暂不支持查询投递状态，投递后需要手动回填；搜索结果是否包含完整 JD 需用真实 token 验证。工具不会做服务端自动投递或浏览器自动化。"
+        message="当前版本的已知边界"
+        description="猎聘状态仍以手动回填为主；QQ 邮件与官网抓取需要用户自备授权码/公开页面；官网反爬或 JS 渲染可能导致邮箱缺失，可在投递中心手动补填。"
       />
     </div>
   );

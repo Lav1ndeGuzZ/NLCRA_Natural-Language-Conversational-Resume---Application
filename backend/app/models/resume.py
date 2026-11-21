@@ -69,6 +69,7 @@ class EducationItem(_Model):
     school: LooseStr = ""
     major: LooseStr = ""
     degree: LooseStr = ""
+    gpa: LooseStr = ""
     start: LooseStr = ""
     end: LooseStr = ""
 

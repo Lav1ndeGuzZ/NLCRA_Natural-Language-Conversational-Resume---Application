@@ -10,20 +10,35 @@ from app.models.resume import ResumeData, missing_fields
 from app.models.schemas import (
     ExtractRequest,
     ExtractResponse,
+    ResumeAnalyzeRequest,
     ResumeExportRequest,
     SaveResumeRequest,
 )
 from app.security import require_access_code, require_session_id
 from app.services.deepseek import DeepSeekError, DeepSeekNotConfigured
 from app.services.extract import ExtractionError, extract_resume
+from app.services.resume_analyze import analyze_resume
 from app.services.resume_docx import build_resume_docx
-from app.services.store import load_resume, save_resume
+from app.services.resume_pdf import build_resume_pdf
+from app.services.resume_templates import RESUME_TEMPLATES, normalize_template
+from app.services.store import load_resume, load_resume_meta, save_resume
 
 router = APIRouter(
     prefix="/api/resume",
     tags=["resume"],
     dependencies=[Depends(require_access_code)],
 )
+
+
+@router.get("/templates")
+async def list_templates() -> dict:
+    return {"ok": True, "data": RESUME_TEMPLATES}
+
+
+@router.post("/analyze")
+async def analyze(body: ResumeAnalyzeRequest) -> dict:
+    normalized = ResumeData.model_validate(body.resume).model_dump()
+    return {"ok": True, "data": analyze_resume(normalized, body.target)}
 
 
 @router.post("/extract", response_model=ExtractResponse)
@@ -61,7 +76,13 @@ async def extract(body: ExtractRequest) -> ExtractResponse:
 @router.get("")
 async def read_resume(session_id: str = Depends(require_session_id)) -> dict:
     resume, updated_at = load_resume(session_id)
-    return {"ok": True, "data": resume, "updated_at": updated_at}
+    meta = load_resume_meta(session_id)
+    return {
+        "ok": True,
+        "data": resume,
+        "updated_at": updated_at,
+        "template_id": meta.get("template_id", "classic"),
+    }
 
 
 @router.put("")
@@ -70,10 +91,12 @@ async def write_resume(
     session_id: str = Depends(require_session_id),
 ) -> dict:
     normalized = ResumeData.model_validate(body.resume).model_dump()
-    updated_at = save_resume(session_id, normalized)
+    template_id = normalize_template(body.template_id)
+    updated_at = save_resume(session_id, normalized, template_id)
     return {
         "ok": True,
         "updated_at": updated_at,
+        "template_id": template_id,
         "missing": missing_fields(ResumeData.model_validate(normalized)),
     }
 
@@ -81,7 +104,7 @@ async def write_resume(
 @router.post("/export/docx")
 async def export_docx(body: ResumeExportRequest) -> StreamingResponse:
     try:
-        content = build_resume_docx(body.resume)
+        content = build_resume_docx(body.resume, template_id=normalize_template(body.template_id))
     except Exception as exc:  # noqa: BLE001 - export errors should be user-facing
         raise HTTPException(status_code=500, detail=f"DOCX 生成失败：{exc}") from exc
 
@@ -98,8 +121,19 @@ async def export_docx(body: ResumeExportRequest) -> StreamingResponse:
 
 
 @router.post("/export/pdf")
-async def export_pdf() -> dict:
-    raise HTTPException(
-        status_code=501,
-        detail="PDF 导出将在 Docker/Linux 环境接入 WeasyPrint；当前请使用 DOCX 或浏览器打印。",
+async def export_pdf(body: ResumeExportRequest) -> StreamingResponse:
+    try:
+        content = build_resume_pdf(body.resume, template_id=normalize_template(body.template_id))
+    except Exception as exc:  # noqa: BLE001 - export errors should be user-facing
+        raise HTTPException(status_code=500, detail=f"PDF 生成失败：{exc}") from exc
+
+    filename = (body.filename or "resume").strip() or "resume"
+    filename = filename.replace("/", "-").replace("\\", "-")[:80]
+    encoded = quote(f"{filename}.pdf")
+    return StreamingResponse(
+        BytesIO(content),
+        media_type="application/pdf",
+        headers={
+            "Content-Disposition": f"attachment; filename=\"resume.pdf\"; filename*=UTF-8''{encoded}",
+        },
     )

@@ -4,6 +4,7 @@ import {
   CheckCircleOutlined,
   EnvironmentOutlined,
   LeftOutlined,
+  MailOutlined,
   RadarChartOutlined,
   RightOutlined,
   SearchOutlined,
@@ -11,6 +12,7 @@ import {
   TagsOutlined,
 } from "@ant-design/icons";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useNavigate } from "react-router-dom";
 import {
   Alert,
   App as AntApp,
@@ -50,6 +52,7 @@ type JobCard = {
   tags: string[];
   score: number;
   source: string;
+  contactEmail?: string;
   raw: unknown;
 };
 
@@ -70,6 +73,7 @@ function toJobCard(item: unknown): JobCard | null {
 
   const scoreRaw = record.matchScore ?? record.match_score ?? record.score;
   const score = Number(scoreRaw);
+  const emailMatch = JSON.stringify(record).match(/[A-Za-z0-9._%+\-]+@[A-Za-z0-9.\-]+\.[A-Za-z]{2,}/);
 
   return {
     id,
@@ -83,6 +87,7 @@ function toJobCard(item: unknown): JobCard | null {
     tags,
     score: Number.isFinite(score) ? Math.max(0, Math.min(100, score)) : 0,
     source: String(record.source ?? "liepin"),
+    contactEmail: emailMatch?.[0],
     raw: item,
   };
 }
@@ -193,7 +198,9 @@ function JobPager({
 export default function Jobs() {
   const { message, modal } = AntApp.useApp();
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
   const token = useSessionStore((state) => state.token);
+  const setRecentCompanies = useSessionStore((state) => state.setRecentCompanies);
   const resumeDraft = useSessionStore((state) => state.resumeDraft);
   const [form] = Form.useForm<JobSearchForm>();
   const [realJobs, setRealJobs] = useState<JobCard[] | null>(null);
@@ -239,6 +246,7 @@ export default function Jobs() {
     },
     onSuccess: (result) => {
       const normalized = normalizeJobs(result.data);
+      setRecentCompanies([...new Set(normalized.map((job) => job.company).filter(Boolean))].slice(0, 20));
       setRealJobs(normalized);
       setMatchMap({});
       setUiPage(1);
@@ -513,6 +521,7 @@ export default function Jobs() {
                   </span>
                   <span>{job.experience}</span>
                   <span>{job.education}</span>
+                  {job.contactEmail && <span title={job.contactEmail}>邮箱 {job.contactEmail}</span>}
                   {job.source === "demo" && <Tag color="gold">演示</Tag>}
                 </div>
 
@@ -545,6 +554,13 @@ export default function Jobs() {
                       onClick={() => setSelectedJob(job)}
                     >
                       匹配
+                    </Button>
+                    <Button
+                      size="small"
+                      icon={<MailOutlined />}
+                      onClick={() => navigate("/outreach", { state: { job: { ...job, email: job.contactEmail ?? "" } } })}
+                    >
+                      邮件
                     </Button>
                     <Button
                       size="small"

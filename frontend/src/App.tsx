@@ -1,17 +1,18 @@
-import { useMemo } from "react";
+import { useEffect, useMemo } from "react";
 import {
   ApiOutlined,
   DashboardOutlined,
   FileTextOutlined,
   LinkOutlined,
+  MailOutlined,
   MessageOutlined,
   SearchOutlined,
   SettingOutlined,
 } from "@ant-design/icons";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Layout, Menu, Space, Tag, Typography } from "antd";
 import { Link, Route, Routes, useLocation, useNavigate } from "react-router-dom";
-import { getHealth } from "./api/client";
+import { getHealth, syncEmailReplies } from "./api/client";
 import { useSessionStore } from "./store/session";
 import Dashboard from "./pages/Dashboard";
 import Connect from "./pages/Connect";
@@ -19,6 +20,7 @@ import Jobs from "./pages/Jobs";
 import Resume from "./pages/Resume";
 import Chat from "./pages/Chat";
 import Settings from "./pages/Settings";
+import Outreach from "./pages/Outreach";
 
 const { Header, Sider, Content, Footer } = Layout;
 
@@ -26,6 +28,7 @@ const menuItems = [
   { key: "/", icon: <DashboardOutlined />, label: "工作台" },
   { key: "/connect", icon: <LinkOutlined />, label: "连接猎聘" },
   { key: "/jobs", icon: <SearchOutlined />, label: "职位搜索" },
+  { key: "/outreach", icon: <MailOutlined />, label: "投递中心" },
   { key: "/resume", icon: <FileTextOutlined />, label: "简历中心" },
   { key: "/chat", icon: <MessageOutlined />, label: "对话助手" },
   { key: "/settings", icon: <SettingOutlined />, label: "设置" },
@@ -35,6 +38,7 @@ const pageTitles: Record<string, string> = {
   "/": "工作台",
   "/connect": "连接猎聘",
   "/jobs": "职位搜索",
+  "/outreach": "投递中心",
   "/resume": "简历中心",
   "/chat": "对话助手",
   "/settings": "设置",
@@ -44,7 +48,26 @@ export default function App() {
   const location = useLocation();
   const navigate = useNavigate();
   const token = useSessionStore((state) => state.token);
+  const qqEmail = useSessionStore((state) => state.qqEmail);
+  const qqAuthCode = useSessionStore((state) => state.qqAuthCode);
+  const queryClient = useQueryClient();
   const { data: health } = useQuery({ queryKey: ["health"], queryFn: getHealth });
+
+  useEffect(() => {
+    if (!qqEmail || !qqAuthCode) return;
+    const timer = window.setInterval(() => {
+      syncEmailReplies()
+        .then((result) => {
+          if (result.data.inserted > 0 || result.data.updated > 0) {
+            queryClient.invalidateQueries({ queryKey: ["applications"] });
+            queryClient.invalidateQueries({ queryKey: ["email-replies"] });
+            queryClient.invalidateQueries({ queryKey: ["reminders"] });
+          }
+        })
+        .catch(() => undefined);
+    }, 5 * 60 * 1000);
+    return () => window.clearInterval(timer);
+  }, [qqEmail, qqAuthCode, queryClient]);
 
   const selectedKey = useMemo(() => {
     if (location.pathname === "/") return "/";
@@ -78,7 +101,7 @@ export default function App() {
         />
         <div className="sider-note">
           <ApiOutlined />
-          <span>只接入猎聘 · 无登录工具</span>
+          <span>猎聘 / QQ 邮箱 / 官网渠道</span>
         </div>
       </Sider>
 
@@ -108,6 +131,7 @@ export default function App() {
             <Route path="/" element={<Dashboard />} />
             <Route path="/connect" element={<Connect />} />
             <Route path="/jobs" element={<Jobs />} />
+            <Route path="/outreach" element={<Outreach />} />
             <Route path="/resume" element={<Resume />} />
             <Route path="/chat" element={<Chat />} />
             <Route path="/settings" element={<Settings />} />
@@ -115,7 +139,7 @@ export default function App() {
         </Content>
 
         <Footer className="app-footer">
-          NLCRA · 对话式简历与精准投放 · 可行性版本 v0.1 · 数据默认保存在浏览器本地
+          NLCRA · 对话式简历与精准投放 · 猎聘 + 邮件 + 官网渠道 · 数据按浏览器会话隔离
         </Footer>
       </Layout>
     </Layout>

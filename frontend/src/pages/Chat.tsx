@@ -8,14 +8,14 @@ import {
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { App as AntApp, Button, Input, Space, Tag, Typography } from "antd";
 import { useNavigate } from "react-router-dom";
-import { chatStream, extractResume, getHealth, getHistory, saveHistory } from "../api/client";
+import { analyzeResume, chatStream, extractResume, getHealth, getHistory, saveHistory } from "../api/client";
 import { useSessionStore } from "../store/session";
 import type { ChatMessage } from "../types";
 
 const INITIAL_MESSAGE: ChatMessage = {
   role: "assistant",
   content:
-    "你好，我是职途助手。先告诉我：你最近一段工作/实习是什么？你负责什么、做出了什么结果？我会帮你把它整理成简历里能用的表达。",
+    "你好，我是职途助手。我会按 6 块帮你整理：项目、学校/专业/成绩、工作/实习、技能、项目经验、求职意向。先从最近一段项目或实习开始：你做了什么、你负责哪部分、结果如何？",
 };
 
 export default function Chat() {
@@ -23,6 +23,7 @@ export default function Chat() {
   const navigate = useNavigate();
   const token = useSessionStore((state) => state.token);
   const setResumeDraft = useSessionStore((state) => state.setResumeDraft);
+  const setResumeAnalysis = useSessionStore((state) => state.setResumeAnalysis);
   const [messages, setMessages] = useState<ChatMessage[]>([INITIAL_MESSAGE]);
   const [input, setInput] = useState("");
   const [lastDemo, setLastDemo] = useState(false);
@@ -107,13 +108,19 @@ export default function Chat() {
   }, [messages, streaming]);
 
   const extractMutation = useMutation({
-    mutationFn: () => extractResume(messages),
-    onSuccess: (result) => {
+    mutationFn: async () => {
+      const result = await extractResume(messages);
+      const target = String((result.resume.jobWant as Record<string, unknown> | undefined)?.jobtitle ?? "");
+      const analysis = await analyzeResume(result.resume, target).catch(() => null);
+      return { result, analysis };
+    },
+    onSuccess: ({ result, analysis }) => {
       setResumeDraft(result.resume, result.missing);
+      setResumeAnalysis(analysis?.data ?? null);
       message.success(
         result.missing.length > 0
-          ? `已整理成简历，还缺 ${result.missing.length} 项信息`
-          : "已整理成简历",
+          ? `已分析并整理成简历，还缺 ${result.missing.length} 项信息`
+          : "已分析并整理成简历",
       );
       navigate("/resume");
     },

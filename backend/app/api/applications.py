@@ -31,11 +31,16 @@ class ApplicationIn(BaseModel):
     salary: str = ""
     status: Status = "submitted"
     note: str = ""
+    source: str = "liepin"
+    contact_email: str = ""
+    jd_url: str = ""
+    status_source: str = "manual"
 
 
 class ApplicationUpdate(BaseModel):
     status: Status | None = None
     note: str | None = Field(default=None, max_length=500)
+    status_source: str | None = Field(default=None, max_length=32)
 
 
 def _counts(items: list[dict]) -> dict[str, int]:
@@ -59,8 +64,8 @@ async def create_application(
     body: ApplicationIn,
     session_id: str = Depends(require_session_id),
 ) -> dict:
-    if body.job_kind not in ("1", "2"):
-        raise HTTPException(status_code=422, detail="job_kind 只能是 \"1\" 或 \"2\"。")
+    if body.job_kind not in ("1", "2", "email"):
+        raise HTTPException(status_code=422, detail="job_kind 只能是 1、2 或 email。")
     item = add_application(session_id, body.model_dump())
     items = list_applications(session_id)
     return {"ok": True, "data": item, "counts": _counts(items)}
@@ -72,7 +77,7 @@ async def patch_application(
     body: ApplicationUpdate,
     session_id: str = Depends(require_session_id),
 ) -> dict:
-    item = update_application(session_id, application_id, body.status, body.note)
+    item = update_application(session_id, application_id, body.status, body.note, body.status_source)
     if item is None:
         raise HTTPException(status_code=404, detail="投递记录不存在。")
     items = list_applications(session_id)
